@@ -1,0 +1,38 @@
+(ns gb-clj.cpu-test
+  (:require
+   [clojure.java.io :as io]
+   [clojure.test :refer :all]
+   [gb-clj.core :as core]
+   [gb-clj.cpu :as cpu]))
+
+(defn get-test-rom [filename]
+  (let [res (io/resource (str "cpu_instrs/individual/" filename))]
+    (if res
+      (.getPath res)
+      (throw (Exception. (str "ROM not found: " filename))))))
+
+(defn run-test-rom [filename max-steps]
+  (let [rom-path (get-test-rom filename)
+        ;; Start with the Power-Up state (Post-BIOS)
+        init-state (-> (core/initial-state)
+                       (core/load-rom rom-path))]
+    (loop [state init-state
+           steps 0]
+      ;; Check for an exit condition (like a specific pass/fail memory address)
+      ;; or just stop when we hit our manual limit.
+      (if (>= steps max-steps)
+        state
+        (let [next-state (try
+                           (cpu/step state)
+                           (catch Exception e
+                             ;; Re-throw with context so you know where it died
+                             (throw (Exception. (str "CPU Crash at step " steps ": " (.getMessage e))))))]
+          (recur next-state (inc steps)))))))
+
+(deftest blargg-instr-test
+  (testing "Running the first Blargg test rom"
+    ;; We start with a small number of steps (e.g., 100) 
+    ;; to find the very first unimplemented opcode.
+    (let [final-state (run-test-rom "01-special.gb" 100)]
+      (is (not (nil? final-state)) "Emulator should return a valid state"))))
+

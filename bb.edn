@@ -1,0 +1,17 @@
+{:paths ["src" "test"]
+ :tasks
+ {;; Run the main emulator
+  run   (shell "clj -M:run")
+
+  ;; Run all tests using Kaocha
+  test  (shell "clj -M:test")
+
+  ;; Run tests and watch for changes (Best for Iterative Hacking!)
+  watch (shell "clj -M:test --watch")
+
+  ;; Clean up any stale classpaths or caches
+  clean (do (println "Cleaning cache...")
+            (shell "rm -rf .cpcache .calva .nrepl-port"))
+
+  ;; Helper to check if your deps.edn is valid
+  check (shell "clj -Spath -A:test:dev")}}

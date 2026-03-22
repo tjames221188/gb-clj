@@ -2,6 +2,7 @@
   (:require
    [clojure.java.io :as io]
    [clojure.test :refer :all]
+   [clojure.tools.logging :as log]
    [gb-clj.core :as core]
    [gb-clj.cpu :as cpu]))
 
@@ -25,6 +26,7 @@
         (let [next-state (try
                            (cpu/step state)
                            (catch Exception e
+                             (log/error e "It's fucked mate")
                              ;; Re-throw with context so you know where it died
                              (throw (Exception. (str "CPU Crash at step " steps ": " (.getMessage e))))))]
           (recur next-state (inc steps)))))))
@@ -35,4 +37,17 @@
     ;; to find the very first unimplemented opcode.
     (let [final-state (run-test-rom "01-special.gb" 100)]
       (is (not (nil? final-state)) "Emulator should return a valid state"))))
+
+(deftest flags
+  (let [mask 2r0100]
+    (testing "Set flag..."
+      (testing "when flag is unset"
+        (is (= {:cpu {:f 2r0100}} (cpu/set-flag {:cpu {:f 2r0000}} mask))))
+      (testing "when flag is already set"
+        (is (= {:cpu {:f 2r0100}} (cpu/set-flag {:cpu {:f 2r0100}} mask)))))
+    (testing "Unset flag..."
+      (testing "When flag is set"
+        (is (= {:cpu {:f 2r1011}} (cpu/unset-flag {:cpu {:f 2r1111}} mask))))
+      (testing "When flag is already unset"
+        (is (= {:cpu {:f 2r1011}} (cpu/unset-flag {:cpu {:f 2r1011}} mask)))))))
 

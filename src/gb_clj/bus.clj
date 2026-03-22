@@ -1,4 +1,6 @@
-(ns gb-clj.bus)
+(ns gb-clj.bus
+  (:require
+   [clojure.tools.logging :as log]))
 
 ;; TODO:
 ;;  - Echo RAM? 0xE000 - 0xFDFF
@@ -12,8 +14,33 @@
     (bit-or (bit-shift-left high 8) low)))
 
 (defn write-byte [state addr val]
-  ;; Use bit-and to ensure we only ever store 0-255
-  (assoc-in state [:memory (bit-and 0xFFFF addr)] (bit-and val 0xFF)))
+
+  (let [addr (bit-and 0xFFFF addr)
+        val (bit-and 0xFF val)]
+    (cond
+      (<= 0x0000 addr 0x7FFF)
+      ;; TODO: there are some valid use cases for this apparently,
+      (do (log/error "Attempted write to ROM" {:addr addr :val val})
+          state)
+
+      (< addr 0xE000)
+      (assoc-in state [:memory addr] val)
+
+      (< addr 0xFE00)
+      (assoc-in state [:memory (- addr 0x2000)] val)
+
+      ;; OAM: 0xFE00 - 0xFE9F
+      (< addr 0xFEA0)
+      (assoc-in state [:memory addr] val)
+
+      ;; The "Forbidden" Hole: 0xFEA0 - 0xFEFF
+      (< addr 0xFF00)
+      (do (log/warnf "Illegal write to prohibited area: 0x%04X" addr)
+          state)
+
+      ;; IO Registers, HRAM, and IE Register: 0xFF00 - 0xFFFF
+      :else
+      (assoc-in state [:memory addr] val))))
 
 (defn map-rom [state rom-data]
   (let [blank-mem (vec (repeat 0x10000 0))

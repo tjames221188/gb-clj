@@ -10,18 +10,25 @@
    :h 0x01 :l 0x4D
    :pc 0x0100 ; The entry point of every GB ROM
    :sp 0xFFFE ; Top of stack
-   :halted? false})
+   :halted? false
+   :t-cycles 0})
+
+(defn tick [state n]
+  (update-in state [:cpu :t-cycles] + n))
 
 (defn inc-pc
   ([state]
    (inc-pc state 1))
   ([state n]
-   (update-in state [:cpu :pc] #(+ % n))))
+   (update-in state [:cpu :pc] #(bit-and 0xFFFF (+ % n)))))
 
 (def Z-mask 2r10000000)
 (def N-mask 2r01000000)
 (def H-mask 2r00100000)
 (def C-mask 2r00010000)
+
+(defn flag-set? [state mask]
+  (pos? (bit-and (get-in state [:cpu :f]) mask)))
 
 (defn set-flag [state mask]
   (update-in state [:cpu :f] bit-or mask))
@@ -93,40 +100,64 @@
   (let [v (get-in state [:cpu r-src])]
     (assoc-in state [:cpu r-dest] v)))
 
+(defn as-signed-8 [n]
+  (if (>= n 128)
+    (- n 256)
+    n))
+
 (defmulti execute (fn [_state opcode] opcode))
 
 (defmethod execute 0x00 NOP
   [state _]
-  (inc-pc state))
+  (-> (inc-pc state)
+      (tick 4)))
 
 (defmethod execute 0x0E LD_C_N
   [state _]
-  (load8-immediate state :c))
+  (-> (load8-immediate state :c)
+      (tick 8)))
 
 (defmethod execute 0x11 LD_DE_NN
   [state _]
-  (load16-immediate state :d :e))
+  (-> (load16-immediate state :d :e)
+      (tick 12)))
 
 (defmethod execute 0x12 LD_ADDR_DE_A
   [state _]
   (let [addr (get16 state :d :e)]
     (-> state
         (bus/write-byte addr (get-in state [:cpu :a]))
-        (inc-pc))))
+        (inc-pc)
+        (tick 8))))
 
 (defmethod execute 0x13 INC_DE
   [state _]
   (-> (inc16 state :d :e)
-      (inc-pc)))
+      (inc-pc)
+      (tick 8)))
 
 (defmethod execute 0x1C INC_E
   [state _]
   (-> (inc8 state :e)
-      (inc-pc)))
+      (inc-pc)
+      (tick 4)))
+
+(defmethod execute 0x20 JR_NZ_r8
+  [state _]
+  (let [z? (flag-set? state Z-mask)
+        offset (as-signed-8 (bus/read-byte state (inc (get-in state [:cpu :pc]))))]
+    (if z?
+      (-> state
+          (inc-pc 2)
+          (tick 8))
+      (-> state
+          (inc-pc (+ 2 offset))
+          (tick 12)))))
 
 (defmethod execute 0x21 LD_HL_NN
   [state _]
-  (load16-immediate state :h :l))
+  (-> (load16-immediate state :h :l)
+      (tick 12)))
 
 (defmethod execute 0x2A LD_A_ADDR_HLI
   [state _]
@@ -135,17 +166,20 @@
     (-> state
         (assoc-in [:cpu :a] val)
         (inc16 :h :l)
-        (inc-pc))))
+        (inc-pc)
+        (tick 8))))
 
 (defmethod execute 0x47 LD_B_A
   [state _]
   (-> (copy-register state :a :b)
-      (inc-pc)))
+      (inc-pc)
+      (tick 4)))
 
 (defmethod execute 0xC3 JP_NN
   [state _]
   (let [addr (bus/read-word state (inc (get-in state [:cpu :pc])))]
-    (assoc-in state [:cpu :pc] addr)))
+    (-> (assoc-in state [:cpu :pc] addr)
+        (tick 16))))
 
 (defmethod execute :default
   [state opcode]

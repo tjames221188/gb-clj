@@ -398,12 +398,22 @@
         (inc-pc 3)
         (tick 16))))
 
+(defmethod execute 0xF0 LDH_A_ADDR_A8
+  [state _]
+  (let [addr (-> (bus/read-byte state (inc (get-in state [:cpu :pc])))
+                 (+ 0xFF00))
+        val (bus/read-byte state addr)]
+    (-> state
+        (assoc-in [:cpu :a] val)
+        (inc-pc 2)
+        (tick 12))))
+
 (defmethod execute 0xF1 POP_AF
   [state _]
   (-> state
       (pop16 :a :f)
       (inc-pc)
-      (tick 16)))
+      (tick 12)))
 
 (defmethod execute 0xF3 DI
   [state _]

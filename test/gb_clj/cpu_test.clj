@@ -35,8 +35,10 @@
   (testing "Running the first Blargg test rom"
     ;; We start with a small number of steps (e.g., 100) 
     ;; to find the very first unimplemented opcode.
-    (let [final-state (run-test-rom "01-special.gb" 100)]
-      (is (not (nil? final-state)) "Emulator should return a valid state"))))
+    (let [final-state (run-test-rom "01-special.gb" 200000)]
+      (is (= "foo" (:serial-out final-state)))
+      (is (not (nil? final-state)) "Emulator should return a valid state"))
+    (is (= 0 1))))
 
 (deftest flags
   (let [mask 2r0100]

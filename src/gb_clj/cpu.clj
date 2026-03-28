@@ -11,7 +11,8 @@
    :pc 0x0100 ; The entry point of every GB ROM
    :sp 0xFFFE ; Top of stack
    :halted? false
-   :t-cycles 0})
+   :t-cycles 0
+   :interrupts-enabled? true})
 
 (defn tick [state n]
   (update-in state [:cpu :t-cycles] + n))
@@ -36,6 +37,11 @@
 (defn unset-flag [state mask]
   (update-in state [:cpu :f] bit-and-not mask))
 
+(defn update-flag [state mask ?]
+  (if ?
+    (set-flag state mask)
+    (unset-flag state mask)))
+
 (defn combine [high low]
   (bit-or (bit-shift-left high 8) low))
 
@@ -53,6 +59,20 @@
     (-> state
         (assoc-in [:cpu r1] high)
         (assoc-in [:cpu r2] low))))
+
+(defn dec8 [state r]
+  (let [prev (get-in state [:cpu r])
+        val (bit-and 0xFF (dec prev))
+        z? (zero? val)
+        h? (zero? (bit-and 0xF prev)) ;; will always "borrow" from upper nibble if lower nibble is 0000
+        ]
+    (-> state
+        (assoc-in [:cpu r] val)
+        (set-flag N-mask)
+        (cond-> z? (set-flag Z-mask)
+                (not z?) (unset-flag Z-mask)
+                h? (set-flag H-mask)
+                (not h?) (unset-flag H-mask)))))
 
 (defn inc8 [state r]
   (let [prev (get-in state [:cpu r])
@@ -96,6 +116,26 @@
         (set16 r1 r2 nn)
         (inc-pc 3))))
 
+(defn pop16 [state r1 r2]
+  (let [sp (get-in state [:cpu :sp])
+        low (cond-> (bus/read-byte state sp)
+              ; lower nibble of f register must always be zero
+              (= :f r2) (bit-and 0xF0))
+        high (bus/read-byte state (inc sp))]
+    (-> state
+        (assoc-in [:cpu r1] high)
+        (assoc-in [:cpu r2] low)
+        (update-in [:cpu :sp] #(bit-and 0xFFFF (+ % 2))))))
+
+(defn push16 [state r1 r2]
+  (let [sp (get-in state [:cpu :sp])
+        h-addr (bit-and 0xFFFF (dec sp))
+        l-addr (bit-and 0xFFFF (dec h-addr))]
+    (-> state
+        (bus/write-byte h-addr (get-in state [:cpu r1]))
+        (bus/write-byte l-addr (get-in state [:cpu r2]))
+        (assoc-in [:cpu :sp] l-addr))))
+
 (defn copy-register [state r-src r-dest]
   (let [v (get-in state [:cpu r-src])]
     (assoc-in state [:cpu r-dest] v)))
@@ -105,11 +145,39 @@
     (- n 256)
     n))
 
+(defn jump-relative-pred-r8
+  [state pred?]
+  (let [offset (as-signed-8 (bus/read-byte state (inc (get-in state [:cpu :pc]))))]
+    (if (pred? state)
+      (-> state
+          (inc-pc (+ 2 offset))
+          (tick 12))
+      (-> state
+          (inc-pc 2)
+          (tick 8)))))
+
 (defmulti execute (fn [_state opcode] opcode))
 
 (defmethod execute 0x00 NOP
   [state _]
   (-> (inc-pc state)
+      (tick 4)))
+
+(defmethod execute 0x01 LD_BC_NN
+  [state _]
+  (-> (load16-immediate state :b :c)
+      (tick 12)))
+
+(defmethod execute 0x03 INC_BC
+  [state _]
+  (-> (inc16 state :b :c)
+      (inc-pc)
+      (tick 8)))
+
+(defmethod execute 0x0D DEC_C
+  [state _]
+  (-> (dec8 state :c)
+      (inc-pc)
       (tick 4)))
 
 (defmethod execute 0x0E LD_C_N
@@ -136,6 +204,19 @@
       (inc-pc)
       (tick 8)))
 
+(defmethod execute 0x14 INC_D
+  [state _]
+  (-> (inc8 state :d)
+      (inc-pc)
+      (tick 4)))
+
+(defmethod execute 0x18 JR_r8
+  [state _]
+  (let [offset (as-signed-8 (bus/read-byte state (inc (get-in state [:cpu :pc]))))]
+    (-> state
+        (inc-pc (+ 2 offset))
+        (tick 12))))
+
 (defmethod execute 0x1C INC_E
   [state _]
   (-> (inc8 state :e)
@@ -144,20 +225,22 @@
 
 (defmethod execute 0x20 JR_NZ_r8
   [state _]
-  (let [z? (flag-set? state Z-mask)
-        offset (as-signed-8 (bus/read-byte state (inc (get-in state [:cpu :pc]))))]
-    (if z?
-      (-> state
-          (inc-pc 2)
-          (tick 8))
-      (-> state
-          (inc-pc (+ 2 offset))
-          (tick 12)))))
+  (jump-relative-pred-r8 state #(not (flag-set? % Z-mask))))
 
 (defmethod execute 0x21 LD_HL_NN
   [state _]
   (-> (load16-immediate state :h :l)
       (tick 12)))
+
+(defmethod execute 0x23 INC_HL
+  [state _]
+  (-> (inc16 state :h :l)
+      (inc-pc)
+      (tick 8)))
+
+(defmethod execute 0x28 JR_Z_r8
+  [state _]
+  (jump-relative-pred-r8 state #(flag-set? % Z-mask)))
 
 (defmethod execute 0x2A LD_A_ADDR_HLI
   [state _]
@@ -169,11 +252,60 @@
         (inc-pc)
         (tick 8))))
 
+(defmethod execute 0x31 LD_SP_NN
+  [state _]
+  (let [pc (get-in state [:cpu :pc])
+        nn (bus/read-word state (inc pc))]
+    (-> state
+        (assoc-in [:cpu :sp] nn)
+        (inc-pc 3)
+        (tick 12))))
+
+(defmethod execute 0x3E LD_A_N
+  [state _]
+  (let [pc (get-in state [:cpu :pc])
+        n (bus/read-byte state (inc pc))]
+    (-> state
+        (assoc-in [:cpu :a] n)
+        (inc-pc 2)
+        (tick 8))))
+
 (defmethod execute 0x47 LD_B_A
   [state _]
   (-> (copy-register state :a :b)
       (inc-pc)
       (tick 4)))
+
+(defmethod execute 0x78 LD_A_B
+  [state _]
+  (-> (copy-register state :b :a)
+      (inc-pc)
+      (tick 4)))
+
+(defmethod execute 0x7C LD_A_H
+  [state _]
+  (-> (copy-register state :h :a)
+      (inc-pc)
+      (tick 4)))
+
+(defmethod execute 0x7D LD_A_L
+  [state _]
+  (-> (copy-register state :l :a)
+      (inc-pc)
+      (tick 4)))
+
+(defmethod execute 0xB1 OR_C
+  [state _]
+  (let [{:keys [a c]} (:cpu state)
+        val (bit-or a c)]
+    (-> state
+        (assoc-in [:cpu :a] val)
+        (update-flag Z-mask (zero? val))
+        (unset-flag N-mask)
+        (unset-flag H-mask)
+        (unset-flag C-mask)
+        (inc-pc)
+        (tick 4))))
 
 (defmethod execute 0xC3 JP_NN
   [state _]
@@ -181,17 +313,102 @@
     (-> (assoc-in state [:cpu :pc] addr)
         (tick 16))))
 
+(defmethod execute 0xC5 PUSH_BC
+  [state _]
+  (-> state
+      (push16 :b :c)
+      (inc-pc)
+      (tick 16)))
+
+(defmethod execute 0xC9 RET
+  [state _]
+  (let [sp (get-in state [:cpu :sp])
+        return-addr (bus/read-word state sp)]
+    (-> state
+        (assoc-in [:cpu :sp] (bit-and 0xFFFF (+ sp 2)))
+        (assoc-in [:cpu :pc] return-addr)
+        (tick 16))))
+
+(defmethod execute 0xCD CALL_NN
+  [state _]
+  (let [pc (get-in state [:cpu :pc])
+        return-addr (bit-and 0xFFFF (+ pc 3))
+        [high low] (split return-addr)
+        target-addr (bus/read-word state (inc pc))
+        sp (get-in state [:cpu :sp])]
+    (-> state
+        ;; Push return address to stack
+        (bus/write-byte (dec sp) high)
+        (bus/write-byte (- sp 2) low)
+        ;; Update Registers
+        (assoc-in [:cpu :sp] (- sp 2))
+        (assoc-in [:cpu :pc] target-addr)
+        (tick 24))))
+
+(defmethod execute 0xE0 LDH_ADDR_A8_A
+  [state _]
+  (let [addr (-> (bus/read-byte state (inc (get-in state [:cpu :pc])))
+                 (+ 0xFF00))]
+    (log/info (str "0xE0 addr:" (Integer/toHexString addr) " a: " (get-in state [:cpu :a])))
+    (-> state
+        (bus/write-byte addr (get-in state [:cpu :a]))
+        (inc-pc 2)
+        (tick 12))))
+
+(defmethod execute 0xE1 POP_HL
+  [state _]
+  (-> state
+      (pop16 :h :l)
+      (inc-pc)
+      (tick 16)))
+
+(defmethod execute 0xE5 PUSH_HL
+  [state _]
+  (-> state
+      (push16 :h :l)
+      (inc-pc)
+      (tick 16)))
+
+(defmethod execute 0xEA LD_ADDR_A16_A
+  [state _]
+  (let [addr (bus/read-word state (inc (get-in state [:cpu :pc])))]
+    (-> state
+        (bus/write-byte addr (get-in state [:cpu :a]))
+        (inc-pc 3)
+        (tick 16))))
+
+(defmethod execute 0xF1 POP_AF
+  [state _]
+  (-> state
+      (pop16 :a :f)
+      (inc-pc)
+      (tick 16)))
+
+(defmethod execute 0xF3 DI
+  [state _]
+  (-> state
+      (assoc-in [:cpu :interrupts-enabled?] false)
+      (inc-pc)
+      (tick 4)))
+
+(defmethod execute 0xF5 PUSH_AF
+  [state _]
+  (-> state
+      (push16 :a :f)
+      (inc-pc)
+      (tick 16)))
+
 (defmethod execute :default
   [state opcode]
   (throw (Exception. (format "Opcode 0x%02X not implemented at PC: 0x%04X"
                              opcode (get-in state [:cpu :pc])))))
 
 (defn format-trace [state opcode]
-  (let [{:keys [pc a f sp]} (:cpu state)]
-    (format "PC: 0x%04X | Op: 0x%02X | A: %02X F: %02X | BC: %04X | DE: %04X | HL: %04X | SP: %04X"
+  (let [{:keys [pc a f sp t-cycles]} (:cpu state)]
+    (format "PC: 0x%04X | Op: 0x%02X | A: %02X F: %02X | BC: %04X | DE: %04X | HL: %04X | SP: %04X (t-cycles: %d)"
             pc opcode a f
             (get16 state :b :c) (get16 state :d :e) (get16 state :h :l)
-            sp)))
+            sp t-cycles)))
 
 (defn step [state]
   (if (:halted? state)
@@ -199,6 +416,7 @@
     (let [pc (get-in state [:cpu :pc])
           opcode (bus/read-byte state pc)]
       (try
+        (log/info (format-trace state opcode))
         (execute state opcode)
         (catch Exception e
           (log/error e (format "CPU error! Trace: \n%s\n" (format-trace state opcode)))

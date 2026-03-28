@@ -429,6 +429,29 @@
       (inc-pc)
       (tick 16)))
 
+(defmethod execute 0xFA LD_A_ADDR_A16
+  [state _]
+  (let [addr (bus/read-word state (inc (get-in state [:cpu :pc])))
+        val (bus/read-byte state addr)]
+    (-> state
+        (assoc-in [:cpu :a] val)
+        (inc-pc 3)
+        (tick 16))))
+
+(defmethod execute 0xFE CP_N
+  [state _]
+  (let [val (bus/read-byte state (inc (get-in state [:cpu :pc])))
+        acc (get-in state [:cpu :a])
+        result (- acc val)
+        half-carry? (< (bit-and 0x0F acc) (bit-and 0x0F val))]
+    (-> state
+        (update-flag Z-mask (zero? result))
+        (set-flag N-mask)
+        (update-flag H-mask half-carry?)
+        (update-flag C-mask (< acc val))
+        (inc-pc 2)
+        (tick 8))))
+
 (defmethod execute :default
   [state opcode]
   (throw (Exception. (format "Opcode 0x%02X not implemented at PC: 0x%04X"

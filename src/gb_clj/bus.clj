@@ -14,7 +14,6 @@
     (bit-or (bit-shift-left high 8) low)))
 
 (defn write-byte [state addr val]
-
   (let [addr (bit-and 0xFFFF addr)
         val (bit-and 0xFF val)]
     (cond
@@ -38,7 +37,15 @@
       (do (log/warnf "Illegal write to prohibited area: 0x%04X" addr)
           state)
 
-      ;; IO Registers, HRAM, and IE Register: 0xFF00 - 0xFFFF
+      ;; Serial control hook
+      (and (= addr 0xFF02) (= val 0x81))
+      (let [c (char (get-in state [:memory 0xFF01]))]
+        (-> state
+            (update :serial-out (fnil str "") c)
+            ;; clear bit 7 to signal transfer complete, for now
+            (assoc-in [:memory 0xFF02] (bit-and val 0x7F))))
+
+;; IO Registers, HRAM, and IE Register: 0xFF00 - 0xFFFF
       :else
       (assoc-in state [:memory addr] val))))
 

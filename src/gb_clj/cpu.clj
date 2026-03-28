@@ -82,10 +82,8 @@
     (-> state
         (assoc-in [:cpu r] val)
         (unset-flag N-mask)
-        (cond-> z? (set-flag Z-mask)
-                (not z?) (unset-flag Z-mask)
-                h? (set-flag H-mask)
-                (not h?) (unset-flag H-mask)))))
+        (update-flag Z-mask z?)
+        (update-flag H-mask h?))))
 
 (defn inc16 [state r1 r2]
   ;; TODO - this currently only works for register pairs. the stack pointer is 
@@ -256,6 +254,12 @@
         (inc16 :h :l)
         (inc-pc)
         (tick 8))))
+
+(defmethod execute 0x2C INC_L
+  [state _]
+  (-> (inc8 state :l)
+      (inc-pc)
+      (tick 4)))
 
 (defmethod execute 0x31 LD_SP_NN
   [state _]

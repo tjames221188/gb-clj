@@ -241,6 +241,12 @@
       (inc-pc)
       (tick 8)))
 
+(defmethod execute 0x24 INC_H
+  [state _]
+  (-> (inc8 state :h)
+      (inc-pc)
+      (tick 4)))
+
 (defmethod execute 0x28 JR_Z_r8
   [state _]
   (jump-relative-pred-r8 state #(flag-set? % Z-mask)))

@@ -174,6 +174,11 @@
       (inc-pc)
       (tick 8)))
 
+(defmethod execute 0x06 LD_B_N
+  [state _]
+  (-> (load8-immediate state :b)
+      (tick 8)))
+
 (defmethod execute 0x0D DEC_C
   [state _]
   (-> (dec8 state :c)

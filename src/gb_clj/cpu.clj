@@ -307,6 +307,13 @@
         (inc-pc)
         (tick 4))))
 
+(defmethod execute 0xC1 POP_BC
+  [state _]
+  (-> state
+      (pop16 :b :c)
+      (inc-pc)
+      (tick 12)))
+
 (defmethod execute 0xC3 JP_NN
   [state _]
   (let [addr (bus/read-word state (inc (get-in state [:cpu :pc])))]

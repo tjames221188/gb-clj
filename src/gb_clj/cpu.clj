@@ -320,6 +320,26 @@
     (-> (assoc-in state [:cpu :pc] addr)
         (tick 16))))
 
+(defmethod execute 0xC4 CALL_NZ_NN
+  [state _]
+  (let [pc (get-in state [:cpu :pc])
+        return-addr (bit-and 0xFFFF (+ pc 3))
+        [high low] (split return-addr)
+        target-addr (bus/read-word state (inc pc))
+        sp (get-in state [:cpu :sp])]
+    (if (flag-set? state Z-mask)
+      (-> state
+          (inc-pc 3)
+          (tick 12))
+      (-> state
+        ;; Push return address to stack
+          (bus/write-byte (dec sp) high)
+          (bus/write-byte (- sp 2) low)
+        ;; Update Registers
+          (assoc-in [:cpu :sp] (- sp 2))
+          (assoc-in [:cpu :pc] target-addr)
+          (tick 24)))))
+
 (defmethod execute 0xC5 PUSH_BC
   [state _]
   (-> state

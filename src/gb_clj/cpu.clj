@@ -281,6 +281,14 @@
       (inc-pc)
       (tick 4)))
 
+(defmethod execute 0x77 LD_HL_ADDR_A
+  [state _]
+  (let [addr (get16 state :h :l)]
+    (-> state
+        (bus/write-byte addr (get-in state [:cpu :a]))
+        (inc-pc)
+        (tick 8))))
+
 (defmethod execute 0x78 LD_A_B
   [state _]
   (-> (copy-register state :b :a)

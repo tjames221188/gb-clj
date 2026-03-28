@@ -367,7 +367,21 @@
   (-> state
       (pop16 :h :l)
       (inc-pc)
-      (tick 16)))
+      (tick 12)))
+
+(defmethod execute 0xE6 AND_N
+  [state _]
+  (let [a (get-in state [:cpu :a])
+        n (bus/read-byte state (inc (get-in state [:cpu :pc])))
+        val (bit-and a n)]
+    (-> state
+        (assoc-in [:cpu :a] val)
+        (update-flag Z-mask (zero? val))
+        (unset-flag N-mask)
+        (set-flag H-mask)
+        (unset-flag C-mask)
+        (inc-pc 2)
+        (tick 8))))
 
 (defmethod execute 0xE5 PUSH_HL
   [state _]

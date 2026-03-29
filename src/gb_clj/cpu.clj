@@ -250,6 +250,15 @@
   (-> (load16-immediate state :h :l)
       (tick 12)))
 
+(defmethod execute 0x22 LD_HL_INC_ADDR_A
+  [state _]
+  (let [addr (get16 state :h :l)]
+    (-> state
+        (bus/write-byte addr (get-in state [:cpu :a]))
+        (inc16 :h :l)
+        (inc-pc)
+        (tick 8))))
+
 (defmethod execute 0x23 INC_HL
   [state _]
   (-> (inc16 state :h :l)

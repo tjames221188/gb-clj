@@ -226,6 +226,15 @@
         (inc-pc (+ 2 offset))
         (tick 12))))
 
+(defmethod execute 0x1A LD_A_DE_ADDR
+  [state _]
+  (let [addr (get16 state :d :e)
+        val (bus/read-byte state addr)]
+    (-> state
+        (assoc-in [:cpu :a] val)
+        (inc-pc)
+        (tick 8))))
+
 (defmethod execute 0x1C INC_E
   [state _]
   (-> (inc8 state :e)

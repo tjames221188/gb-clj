@@ -332,6 +332,19 @@
       (inc-pc)
       (tick 4)))
 
+(defmethod execute 0xA9 XOR_C
+  [state _]
+  (let [{:keys [a c]} (:cpu state)
+        val (bit-xor a c)]
+    (-> state
+        (assoc-in [:cpu :a] val)
+        (update-flag Z-mask (zero? val))
+        (unset-flag N-mask)
+        (unset-flag H-mask)
+        (unset-flag C-mask)
+        (inc-pc)
+        (tick 4))))
+
 (defmethod execute 0xB1 OR_C
   [state _]
   (let [{:keys [a c]} (:cpu state)

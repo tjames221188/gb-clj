@@ -170,6 +170,14 @@
   [a b result]
   (bit-test (bit-xor a b result) 4))
 
+(defn load-r-from-addr16 [state r r-addr-1 r-addr-2]
+  (let [addr (get16 state r-addr-1 r-addr-2)
+        val (bus/read-byte state addr)]
+    (-> state
+        (assoc-in [:cpu r] val)
+        (inc-pc)
+        (tick 8))))
+
 (defmulti execute (fn [_state opcode] opcode))
 
 (defmethod execute 0x00 NOP
@@ -198,6 +206,10 @@
   [state _]
   (-> (load8-immediate state :b)
       (tick 8)))
+
+(defmethod execute 0x0A LD_A_ADDR_BC
+  [state _]
+  (load-r-from-addr16 state :a :b :c))
 
 (defmethod execute 0x0D DEC_C
   [state _]
@@ -242,14 +254,9 @@
         (inc-pc (+ 2 offset))
         (tick 12))))
 
-(defmethod execute 0x1A LD_A_DE_ADDR
+(defmethod execute 0x1A LD_A_ADDR_DE
   [state _]
-  (let [addr (get16 state :d :e)
-        val (bus/read-byte state addr)]
-    (-> state
-        (assoc-in [:cpu :a] val)
-        (inc-pc)
-        (tick 8))))
+  (load-r-from-addr16 state :a :d :e))
 
 (defmethod execute 0x1C INC_E
   [state _]
@@ -334,11 +341,35 @@
         (inc-pc 2)
         (tick 8))))
 
+(defmethod execute 0x46 LD_B_ADDR_HL
+  [state _]
+  (load-r-from-addr16 state :b :h :l))
+
 (defmethod execute 0x47 LD_B_A
   [state _]
   (-> (copy-register state :a :b)
       (inc-pc)
       (tick 4)))
+
+(defmethod execute 0x4E LD_C_ADDR_HL
+  [state _]
+  (load-r-from-addr16 state :c :h :l))
+
+(defmethod execute 0x56 LD_D_ADDR_HL
+  [state _]
+  (load-r-from-addr16 state :d :h :l))
+
+(defmethod execute 0x5E LD_E_ADDR_HL
+  [state _]
+  (load-r-from-addr16 state :e :h :l))
+
+(defmethod execute 0x66 LD_H_ADDR_HL
+  [state _]
+  (load-r-from-addr16 state :h :h :l))
+
+(defmethod execute 0x6E LD_L_ADDR_HL
+  [state _]
+  (load-r-from-addr16 state :l :h :l))
 
 (defmethod execute 0x77 LD_HL_ADDR_A
   [state _]

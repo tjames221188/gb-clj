@@ -471,6 +471,20 @@
         (assoc-in [:cpu :pc] target-addr)
         (tick 24))))
 
+(defmethod execute 0xD6 SUB_A_N
+  [state _]
+  (let [a (get-in state [:cpu :a])
+        n (bus/read-byte state (inc (get-in state [:cpu :pc])))
+        val (bit-and 0xFF (- a n))]
+    (-> state
+        (assoc-in [:cpu :a] val)
+        (update-flag Z-mask (zero? val))
+        (set-flag N-mask)
+        (update-flag H-mask (half-carry? a n val))
+        (update-flag C-mask (> n a))
+        (inc-pc 2)
+        (tick 8))))
+
 (defmethod execute 0xE0 LDH_ADDR_A8_A
   [state _]
   (let [addr (-> (bus/read-byte state (inc (get-in state [:cpu :pc])))

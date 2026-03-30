@@ -392,6 +392,17 @@
         (inc-pc)
         (tick 4))))
 
+(defmethod execute 0xB7 OR_A_A
+  [state _]
+  (let [a (get-in state [:cpu :a])]
+    (-> state
+        (update-flag Z-mask (zero? a))
+        (unset-flag N-mask)
+        (unset-flag H-mask)
+        (unset-flag C-mask)
+        (inc-pc)
+        (tick 4))))
+
 (defmethod execute 0xC1 POP_BC
   [state _]
   (-> state

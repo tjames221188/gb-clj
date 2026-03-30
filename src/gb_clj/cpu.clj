@@ -63,16 +63,13 @@
 (defn dec8 [state r]
   (let [prev (get-in state [:cpu r])
         val (bit-and 0xFF (dec prev))
-        z? (zero? val)
         h? (zero? (bit-and 0xF prev)) ;; will always "borrow" from upper nibble if lower nibble is 0000
         ]
     (-> state
         (assoc-in [:cpu r] val)
         (set-flag N-mask)
-        (cond-> z? (set-flag Z-mask)
-                (not z?) (unset-flag Z-mask)
-                h? (set-flag H-mask)
-                (not h?) (unset-flag H-mask)))))
+        (update-flag Z-mask (zero? val))
+        (update-flag H-mask h?))))
 
 (defn dec16 [state r1 r2]
   (let [[r1-v r2-v] (->> (:cpu state)
@@ -247,6 +244,12 @@
       (inc-pc)
       (tick 4)))
 
+(defmethod execute 0x15 DEC_D
+  [state _]
+  (-> (dec8 state :d)
+      (inc-pc)
+      (tick 4)))
+
 (defmethod execute 0x18 JR_r8
   [state _]
   (let [offset (as-signed-8 (bus/read-byte state (inc (get-in state [:cpu :pc]))))]
@@ -261,6 +264,12 @@
 (defmethod execute 0x1C INC_E
   [state _]
   (-> (inc8 state :e)
+      (inc-pc)
+      (tick 4)))
+
+(defmethod execute 0x1D DEC_E
+  [state _]
+  (-> (dec8 state :e)
       (inc-pc)
       (tick 4)))
 
@@ -294,6 +303,12 @@
       (inc-pc)
       (tick 4)))
 
+(defmethod execute 0x25 DEC_H
+  [state _]
+  (-> (dec8 state :h)
+      (inc-pc)
+      (tick 4)))
+
 (defmethod execute 0x28 JR_Z_r8
   [state _]
   (jump-relative-pred-r8 state #(flag-set? % Z-mask)))
@@ -314,6 +329,12 @@
       (inc-pc)
       (tick 4)))
 
+(defmethod execute 0x2D DEC_L
+  [state _]
+  (-> (dec8 state :l)
+      (inc-pc)
+      (tick 4)))
+
 (defmethod execute 0x31 LD_SP_NN
   [state _]
   (let [pc (get-in state [:cpu :pc])
@@ -331,6 +352,12 @@
         (dec16 :h :l)
         (inc-pc)
         (tick 8))))
+
+(defmethod execute 0x3D DEC_A
+  [state _]
+  (-> (dec8 state :a)
+      (inc-pc)
+      (tick 4)))
 
 (defmethod execute 0x3E LD_A_N
   [state _]

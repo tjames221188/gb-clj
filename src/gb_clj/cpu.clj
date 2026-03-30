@@ -74,6 +74,17 @@
                 h? (set-flag H-mask)
                 (not h?) (unset-flag H-mask)))))
 
+(defn dec16 [state r1 r2]
+  (let [[r1-v r2-v] (->> (:cpu state)
+                         ((juxt r1 r2))
+                         (apply combine)
+                         (dec)
+                         (bit-and 0xFFFF)
+                         (split))]
+    (-> state
+        (assoc-in [:cpu r1] r1-v)
+        (assoc-in [:cpu r2] r2-v))))
+
 (defn inc8 [state r]
   (let [prev (get-in state [:cpu r])
         val (bit-and 0xFF (inc prev))
@@ -304,6 +315,15 @@
         (assoc-in [:cpu :sp] nn)
         (inc-pc 3)
         (tick 12))))
+
+(defmethod execute 0x32  LD_HL_DEC_ADDR_A
+  [state _]
+  (let [addr (get16 state :h :l)]
+    (-> state
+        (bus/write-byte addr (get-in state [:cpu :a]))
+        (dec16 :h :l)
+        (inc-pc)
+        (tick 8))))
 
 (defmethod execute 0x3E LD_A_N
   [state _]

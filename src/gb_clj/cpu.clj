@@ -482,6 +482,13 @@
         (assoc-in [:cpu :pc] target-addr)
         (tick 24))))
 
+(defmethod execute 0xD5 PUSH_DE
+  [state _]
+  (-> state
+      (push16 :d :e)
+      (inc-pc)
+      (tick 16)))
+
 (defmethod execute 0xD6 SUB_A_N
   [state _]
   (let [a (get-in state [:cpu :a])

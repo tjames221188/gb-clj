@@ -154,6 +154,11 @@
           (inc-pc 2)
           (tick 8)))))
 
+(defn half-carry?
+  "works for addition and subtraction"
+  [a b result]
+  (bit-test (bit-xor a b result) 4))
+
 (defmulti execute (fn [_state opcode] opcode))
 
 (defmethod execute 0x00 NOP
@@ -406,6 +411,20 @@
       (push16 :b :c)
       (inc-pc)
       (tick 16)))
+
+(defmethod execute 0xC6 ADD_A_N
+  [state _]
+  (let [a (get-in state [:cpu :a])
+        n (bus/read-byte state (inc (get-in state [:cpu :pc])))
+        val (bit-and 0xFF (+ a n))]
+    (-> state
+        (assoc-in [:cpu :a] val)
+        (update-flag Z-mask (zero? val))
+        (unset-flag N-mask)
+        (update-flag H-mask (half-carry? a n val))
+        (update-flag C-mask (> (+ a n) 0xFF))
+        (inc-pc 2)
+        (tick 8))))
 
 (defmethod execute 0xC9 RET
   [state _]

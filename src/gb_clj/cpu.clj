@@ -112,7 +112,8 @@
         n (bus/read-byte state (inc pc))]
     (-> state
         (assoc-in [:cpu r1] n)
-        (inc-pc 2))))
+        (inc-pc 2)
+        (tick 8))))
 
 (defn load16-immediate
   [state r1 r2]
@@ -201,8 +202,7 @@
 
 (defmethod execute 0x06 LD_B_N
   [state _]
-  (-> (load8-immediate state :b)
-      (tick 8)))
+  (load8-immediate state :b))
 
 (defmethod execute 0x0A LD_A_ADDR_BC
   [state _]
@@ -216,8 +216,7 @@
 
 (defmethod execute 0x0E LD_C_N
   [state _]
-  (-> (load8-immediate state :c)
-      (tick 8)))
+  (load8-immediate state :c))
 
 (defmethod execute 0x11 LD_DE_NN
   [state _]
@@ -250,6 +249,10 @@
       (inc-pc)
       (tick 4)))
 
+(defmethod execute 0x16 LD_D_N
+  [state _]
+  (load8-immediate state :d))
+
 (defmethod execute 0x18 JR_r8
   [state _]
   (let [offset (as-signed-8 (bus/read-byte state (inc (get-in state [:cpu :pc]))))]
@@ -272,6 +275,10 @@
   (-> (dec8 state :e)
       (inc-pc)
       (tick 4)))
+
+(defmethod execute 0x1E LD_E_N
+  [state _]
+  (load8-immediate state :e))
 
 (defmethod execute 0x20 JR_NZ_r8
   [state _]
@@ -309,6 +316,10 @@
       (inc-pc)
       (tick 4)))
 
+(defmethod execute 0x26 LD_H_N
+  [state _]
+  (load8-immediate state :h))
+
 (defmethod execute 0x28 JR_Z_r8
   [state _]
   (jump-relative-pred-r8 state #(flag-set? % Z-mask)))
@@ -334,6 +345,10 @@
   (-> (dec8 state :l)
       (inc-pc)
       (tick 4)))
+
+(defmethod execute 0x2E LD_L_N
+  [state _]
+  (load8-immediate state :l))
 
 (defmethod execute 0x31 LD_SP_NN
   [state _]
@@ -361,12 +376,7 @@
 
 (defmethod execute 0x3E LD_A_N
   [state _]
-  (let [pc (get-in state [:cpu :pc])
-        n (bus/read-byte state (inc pc))]
-    (-> state
-        (assoc-in [:cpu :a] n)
-        (inc-pc 2)
-        (tick 8))))
+  (load8-immediate state :a))
 
 (defmethod execute 0x46 LD_B_ADDR_HL
   [state _]

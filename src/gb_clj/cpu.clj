@@ -424,18 +424,65 @@
       (inc-pc)
       (tick 4)))
 
-(defmethod execute 0xA9 XOR_C
-  [state _]
-  (let [{:keys [a c]} (:cpu state)
-        val (bit-xor a c)]
+(defn xor-val [state v]
+  (let [a (get-in state [:cpu :a])
+        val (bit-xor a v)]
     (-> state
         (assoc-in [:cpu :a] val)
         (update-flag Z-mask (zero? val))
         (unset-flag N-mask)
         (unset-flag H-mask)
-        (unset-flag C-mask)
+        (unset-flag C-mask))))
+
+(defmethod execute 0xA8 XOR_B
+  [state _]
+  (-> (xor-val state (get-in state [:cpu :b]))
+      (inc-pc)
+      (tick 4)))
+
+(defmethod execute 0xA9 XOR_C
+  [state _]
+  (-> (xor-val state (get-in state [:cpu :c]))
+      (inc-pc)
+      (tick 4)))
+
+(defmethod execute 0xAA XOR_D
+  [state _]
+  (-> (xor-val state (get-in state [:cpu :d]))
+      (inc-pc)
+      (tick 4)))
+
+(defmethod execute 0xAB XOR_E
+  [state _]
+  (-> (xor-val state (get-in state [:cpu :e]))
+      (inc-pc)
+      (tick 4)))
+
+(defmethod execute 0xAC XOR_H
+  [state _]
+  (-> (xor-val state (get-in state [:cpu :h]))
+      (inc-pc)
+      (tick 4)))
+
+(defmethod execute 0xAD XOR_L
+  [state _]
+  (-> (xor-val state (get-in state [:cpu :l]))
+      (inc-pc)
+      (tick 4)))
+
+(defmethod execute 0xAE XOR_A_ADDR_HL
+  [state _]
+  (let [addr (get16 state :h :l)
+        val (bus/read-byte state addr)]
+    (-> (xor-val state val)
         (inc-pc)
-        (tick 4))))
+        (tick 8))))
+
+(defmethod execute 0xAF XOR_A
+  [state _]
+  (-> (xor-val state (get-in state [:cpu :a]))
+      (inc-pc)
+      (tick 4)))
 
 (defmethod execute 0xB1 OR_C
   [state _]
@@ -606,6 +653,13 @@
         (bus/write-byte addr (get-in state [:cpu :a]))
         (inc-pc 3)
         (tick 16))))
+
+(defmethod execute 0xEE XOR_N
+  [state _]
+  (let [val (bus/read-byte state (inc (get-in state [:cpu :pc])))]
+    (-> (xor-val state val)
+        (inc-pc 2)
+        (tick 8))))
 
 (defmethod execute 0xF0 LDH_A_ADDR_A8
   [state _]

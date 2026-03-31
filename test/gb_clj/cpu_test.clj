@@ -4,7 +4,8 @@
    [clojure.test :refer :all]
    [clojure.tools.logging :as log]
    [gb-clj.core :as core]
-   [gb-clj.cpu :as cpu]))
+   [gb-clj.cpu :as cpu]
+   [gb-clj.cpu.util :as util]))
 
 (defn get-test-rom [filename]
   (let [res (io/resource (str "cpu_instrs/individual/" filename))]
@@ -44,12 +45,12 @@
   (let [mask 2r0100]
     (testing "Set flag..."
       (testing "when flag is unset"
-        (is (= {:cpu {:f 2r0100}} (cpu/set-flag {:cpu {:f 2r0000}} mask))))
+        (is (= {:cpu {:f 2r0100}} (util/set-flag {:cpu {:f 2r0000}} mask))))
       (testing "when flag is already set"
-        (is (= {:cpu {:f 2r0100}} (cpu/set-flag {:cpu {:f 2r0100}} mask)))))
+        (is (= {:cpu {:f 2r0100}} (util/set-flag {:cpu {:f 2r0100}} mask)))))
     (testing "Unset flag..."
       (testing "When flag is set"
-        (is (= {:cpu {:f 2r1011}} (cpu/unset-flag {:cpu {:f 2r1111}} mask))))
+        (is (= {:cpu {:f 2r1011}} (util/unset-flag {:cpu {:f 2r1111}} mask))))
       (testing "When flag is already unset"
-        (is (= {:cpu {:f 2r1011}} (cpu/unset-flag {:cpu {:f 2r1011}} mask)))))))
+        (is (= {:cpu {:f 2r1011}} (util/unset-flag {:cpu {:f 2r1011}} mask)))))))
 

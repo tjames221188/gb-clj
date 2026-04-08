@@ -537,6 +537,63 @@
   [state _]
   (util/load-r-from-addr16 state :l :h :l))
 
+(defmethod execute 0x88 ADC_A_B
+  [state _]
+  (let [b (get-in state [:cpu :b])]
+    (-> (util/add-with-carry state b)
+        (util/inc-pc)
+        (util/tick 4))))
+
+(defmethod execute 0x89 ADC_A_C
+  [state _]
+  (let [c (get-in state [:cpu :c])]
+    (-> (util/add-with-carry state c)
+        (util/inc-pc)
+        (util/tick 4))))
+
+(defmethod execute 0x8A ADC_A_D
+  [state _]
+  (let [d (get-in state [:cpu :d])]
+    (-> (util/add-with-carry state d)
+        (util/inc-pc)
+        (util/tick 4))))
+
+(defmethod execute 0x8B ADC_A_E
+  [state _]
+  (let [e (get-in state [:cpu :e])]
+    (-> (util/add-with-carry state e)
+        (util/inc-pc)
+        (util/tick 4))))
+
+(defmethod execute 0x8C ADC_A_H
+  [state _]
+  (let [h (get-in state [:cpu :h])]
+    (-> (util/add-with-carry state h)
+        (util/inc-pc)
+        (util/tick 4))))
+
+(defmethod execute 0x8D ADC_A_L
+  [state _]
+  (let [l (get-in state [:cpu :l])]
+    (-> (util/add-with-carry state l)
+        (util/inc-pc)
+        (util/tick 4))))
+
+(defmethod execute 0x8E ADC_A_ADDR_HL
+  [state _]
+  (let [addr (util/get16 state :h :l)
+        val (bus/read-byte state addr)]
+    (-> (util/add-with-carry state val)
+        (util/inc-pc)
+        (util/tick 8))))
+
+(defmethod execute 0x8F ADC_A_A
+  [state _]
+  (let [a (get-in state [:cpu :a])]
+    (-> (util/add-with-carry state a)
+        (util/inc-pc)
+        (util/tick 4))))
+
 (defn xor-val [state v]
   (let [a (get-in state [:cpu :a])
         val (bit-xor a v)]
@@ -708,6 +765,13 @@
         (assoc-in [:cpu :sp] (- sp 2))
         (assoc-in [:cpu :pc] target-addr)
         (util/tick 24))))
+
+(defmethod execute 0xCE ADC_A_N
+  [state _]
+  (let [n (bus/read-byte state (inc (get-in state [:cpu :pc])))]
+    (-> (util/add-with-carry state n)
+        (util/inc-pc 2)
+        (util/tick 8))))
 
 (defmethod execute 0xD1 POP_DE
   [state _]

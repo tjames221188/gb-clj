@@ -209,4 +209,18 @@
            (bit-shift-left old-c 7))
    (bit-and old-val 0x01)])
 
+(defn add-with-carry
+  [state val]
+  (let [a (get-in state [:cpu :a])
+        old-c (if (flag-set? state C-mask) 1 0)
+        result (+ a val old-c)
+        new-a (bit-and 0xFF result)
+        h? (> (+ (bit-and  a 0xf) (bit-and val 0xF) old-c) 0xF)
+        c? (> result 0xFF)]
+    (-> state
+        (assoc-in [:cpu :a] new-a)
+        (update-flag Z-mask (zero? new-a))
+        (unset-flag N-mask)
+        (update-flag H-mask h?)
+        (update-flag C-mask c?))))
 

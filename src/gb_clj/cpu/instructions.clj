@@ -709,6 +709,13 @@
         (assoc-in [:cpu :pc] target-addr)
         (util/tick 24))))
 
+(defmethod execute 0xD1 POP_DE
+  [state _]
+  (-> state
+      (util/pop16 :d :e)
+      (util/inc-pc)
+      (util/tick 12)))
+
 (defmethod execute 0xD5 PUSH_DE
   [state _]
   (-> state

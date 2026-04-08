@@ -28,6 +28,10 @@
   (-> (util/load16-immediate state :b :c)
       (util/tick 12)))
 
+(defmethod execute 0x02 LD_ADDR_BC_A
+  [state _]
+  (util/write-r-to-addr16 state :a :b :c))
+
 (defmethod execute 0x03 INC_BC
   [state _]
   (-> (util/inc16 state :b :c)
@@ -77,11 +81,7 @@
 
 (defmethod execute 0x12 LD_ADDR_DE_A
   [state _]
-  (let [addr (util/get16 state :d :e)]
-    (-> state
-        (bus/write-byte addr (get-in state [:cpu :a]))
-        (util/inc-pc)
-        (util/tick 8))))
+  (util/write-r-to-addr16 state :a :d :e))
 
 (defmethod execute 0x13 INC_DE
   [state _]
@@ -243,6 +243,21 @@
         (util/inc-pc)
         (util/tick 8))))
 
+(defmethod execute 0x36 LD_ADDR_HL_N
+  [state _]
+  (let [addr (util/get16 state :h :l)]
+    (util/load8-immediate state addr)))
+
+(defmethod execute 0x3A  LD_A_ADDR_HL_DEC
+  [state _]
+  (let [addr (util/get16 state :h :l)
+        val (bus/read-byte state addr)]
+    (-> state
+        (assoc-in [:cpu :a] val)
+        (util/dec16 :h :l)
+        (util/inc-pc)
+        (util/tick 8))))
+
 (defmethod execute 0x3D DEC_A
   [state _]
   (-> (util/dec8 state :a)
@@ -252,6 +267,47 @@
 (defmethod execute 0x3E LD_A_N
   [state _]
   (util/load8-immediate state :a))
+
+(defmethod execute 0x40 LD_B_B
+  [state _]
+  (-> state
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x41 LD_B_C
+  [state _]
+  (-> state
+      (util/copy-register :c :b)
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x42 LD_B_D
+  [state _]
+  (-> state
+      (util/copy-register :d :b)
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x43 LD_B_E
+  [state _]
+  (-> state
+      (util/copy-register :e :b)
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x44 LD_B_H
+  [state _]
+  (-> state
+      (util/copy-register :h :b)
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x45 LD_B_L
+  [state _]
+  (-> state
+      (util/copy-register :l :b)
+      (util/inc-pc)
+      (util/tick 4)))
 
 (defmethod execute 0x46 LD_B_ADDR_HL
   [state _]
@@ -263,17 +319,143 @@
       (util/inc-pc)
       (util/tick 4)))
 
+(defmethod execute 0x48 LD_C_B
+  [state _]
+  (-> (util/copy-register state :b :c)
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x49 LD_C_C
+  [state _]
+  (-> state
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x4A LD_C_D
+  [state _]
+  (-> (util/copy-register state :d :c)
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x4B LD_C_E
+  [state _]
+  (-> (util/copy-register state :e :c)
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x4C LD_C_H
+  [state _]
+  (-> (util/copy-register state :h :c)
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x4D LD_C_L
+  [state _]
+  (-> (util/copy-register state :l :c)
+      (util/inc-pc)
+      (util/tick 4)))
+
 (defmethod execute 0x4E LD_C_ADDR_HL
   [state _]
   (util/load-r-from-addr16 state :c :h :l))
+
+(defmethod execute 0x4F LD_C_A
+  [state _]
+  (-> (util/copy-register state :a :c)
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x50 LD_D_B
+  [state _]
+  (-> (util/copy-register state :b :d)
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x51 LD_D_C
+  [state _]
+  (-> (util/copy-register state :c :d)
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x52 LD_D_D
+  [state _]
+  (-> state
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x53 LD_D_E
+  [state _]
+  (-> (util/copy-register state :e :d)
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x54 LD_D_H
+  [state _]
+  (-> (util/copy-register state :h :d)
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x55 LD_D_L
+  [state _]
+  (-> (util/copy-register state :l :d)
+      (util/inc-pc)
+      (util/tick 4)))
 
 (defmethod execute 0x56 LD_D_ADDR_HL
   [state _]
   (util/load-r-from-addr16 state :d :h :l))
 
+(defmethod execute 0x57 LD_D_A
+  [state _]
+  (-> (util/copy-register state :a :d)
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x58 LD_E_B
+  [state _]
+  (-> (util/copy-register state :b :e)
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x59 LD_E_C
+  [state _]
+  (-> (util/copy-register state :c :e)
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x5A LD_E_D
+  [state _]
+  (-> (util/copy-register state :d :e)
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x5B LD_E_E
+  [state _]
+  (-> state
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x5C LD_E_H
+  [state _]
+  (-> (util/copy-register state :h :e)
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x5D LD_E_L
+  [state _]
+  (-> (util/copy-register state :l :e)
+      (util/inc-pc)
+      (util/tick 4)))
+
 (defmethod execute 0x5E LD_E_ADDR_HL
   [state _]
   (util/load-r-from-addr16 state :e :h :l))
+
+(defmethod execute 0x5F LD_E_A
+  [state _]
+  (-> (util/copy-register state :a :e)
+      (util/inc-pc)
+      (util/tick 4)))
 
 (defmethod execute 0x66 LD_H_ADDR_HL
   [state _]
@@ -282,6 +464,30 @@
 (defmethod execute 0x6E LD_L_ADDR_HL
   [state _]
   (util/load-r-from-addr16 state :l :h :l))
+
+(defmethod execute 0x70 LD_ADDR_HL_B
+  [state _]
+  (util/write-r-to-addr16 state :b :h :l))
+
+(defmethod execute 0x71 LD_ADDR_HL_C
+  [state _]
+  (util/write-r-to-addr16 state :c :h :l))
+
+(defmethod execute 0x72 LD_ADDR_HL_D
+  [state _]
+  (util/write-r-to-addr16 state :d :h :l))
+
+(defmethod execute 0x73 LD_ADDR_HL_E
+  [state _]
+  (util/write-r-to-addr16 state :e :h :l))
+
+(defmethod execute 0x74 LD_ADDR_HL_H
+  [state _]
+  (util/write-r-to-addr16 state :h :h :l))
+
+(defmethod execute 0x75 LD_ADDR_HL_L
+  [state _]
+  (util/write-r-to-addr16 state :l :h :l))
 
 (defmethod execute 0x77 LD_HL_ADDR_A
   [state _]
@@ -297,6 +503,24 @@
       (util/inc-pc)
       (util/tick 4)))
 
+(defmethod execute 0x79 LD_A_C
+  [state _]
+  (-> (util/copy-register state :c :a)
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x7A LD_A_D
+  [state _]
+  (-> (util/copy-register state :d :a)
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x7B LD_A_E
+  [state _]
+  (-> (util/copy-register state :e :a)
+      (util/inc-pc)
+      (util/tick 4)))
+
 (defmethod execute 0x7C LD_A_H
   [state _]
   (-> (util/copy-register state :h :a)
@@ -308,6 +532,10 @@
   (-> (util/copy-register state :l :a)
       (util/inc-pc)
       (util/tick 4)))
+
+(defmethod execute 0x7E LD_A_ADDR_HL
+  [state _]
+  (util/load-r-from-addr16 state :l :h :l))
 
 (defn xor-val [state v]
   (let [a (get-in state [:cpu :a])
@@ -506,7 +734,6 @@
   [state _]
   (let [addr (-> (bus/read-byte state (inc (get-in state [:cpu :pc])))
                  (+ 0xFF00))]
-    (log/info (str "0xE0 addr:" (Integer/toHexString addr) " a: " (get-in state [:cpu :a])))
     (-> state
         (bus/write-byte addr (get-in state [:cpu :a]))
         (util/inc-pc 2)
@@ -518,6 +745,14 @@
       (util/pop16 :h :l)
       (util/inc-pc)
       (util/tick 12)))
+
+(defmethod execute 0xE2 LD_ADDR_C_A
+  [state _]
+  (let [addr (+ 0xFF00 (get-in state [:cpu :c]))]
+    (-> state
+        (bus/write-byte addr (get-in state [:cpu :a]))
+        (util/inc-pc)
+        (util/tick 8))))
 
 (defmethod execute 0xE6 AND_N
   [state _]
@@ -571,6 +806,16 @@
       (util/pop16 :a :f)
       (util/inc-pc)
       (util/tick 12)))
+
+(defmethod execute 0xF2 LD_A_ADDR_C
+  [state _]
+  (let [addr (-> (get-in state [:cpu :c])
+                 (+ 0xFF00))
+        val (bus/read-byte state addr)]
+    (-> state
+        (assoc-in [:cpu :a] val)
+        (util/inc-pc)
+        (util/tick 8))))
 
 (defmethod execute 0xF3 DI
   [state _]

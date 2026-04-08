@@ -94,13 +94,18 @@
         (assoc-in [:cpu r2] r2-v))))
 
 (defn load8-immediate
-  [state r1]
+  [state register-or-addr]
   (let [pc (get-in state [:cpu :pc])
         n (bus/read-byte state (inc pc))]
-    (-> state
-        (assoc-in [:cpu r1] n)
-        (inc-pc 2)
-        (tick 8))))
+    (if (keyword? register-or-addr)
+      (-> state
+          (assoc-in [:cpu register-or-addr] n)
+          (inc-pc 2)
+          (tick 8))
+      (-> state
+          (bus/write-byte register-or-addr n)
+          (inc-pc 2)
+          (tick 12)))))
 
 (defn load16-immediate
   [state r1 r2]
@@ -154,6 +159,14 @@
   "works for addition and subtraction"
   [a b result]
   (bit-test (bit-xor a b result) 4))
+
+(defn write-r-to-addr16 [state r r-addr-1 r-addr-2]
+  (let [addr (get16 state r-addr-1 r-addr-2)
+        val (get-in state [:cpu r])]
+    (-> state
+        (bus/write-byte addr val)
+        (inc-pc)
+        (tick 8))))
 
 (defn load-r-from-addr16 [state r r-addr-1 r-addr-2]
   (let [addr (get16 state r-addr-1 r-addr-2)

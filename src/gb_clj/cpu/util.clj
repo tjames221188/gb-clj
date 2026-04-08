@@ -163,3 +163,37 @@
         (inc-pc)
         (tick 8))))
 
+;; Rotating
+(defn rotate-left-circular
+  "Rotate left circular. Returns `[new-val new-c]`"
+  [old-val _]
+  (let [bit-7 (bit-shift-right (bit-and old-val 0x80) 7)]
+    [(bit-and 0xFF (bit-or (bit-shift-left old-val 1)
+                           bit-7))
+     bit-7]))
+
+(defn rotate-right-circular
+  "Rotate right circular. Returns `[new-val new-c]`"
+  [old-val _]
+  (let [bit-0 (bit-and old-val 0x1)]
+    [(bit-or (bit-shift-right old-val 1)
+             (bit-shift-left bit-0 7))
+     bit-0]))
+
+(defn rotate-thru-carry-left
+  "Rotate left the bits at `register-or-addr` using the carry flag as the 9th bit.
+  Returns `[new-val new-c]`"
+  [old-val old-c]
+  [(bit-and 0xFF (bit-or (bit-shift-left old-val 1)
+                         old-c))
+   (bit-shift-right (bit-and old-val 0x80) 7)])
+
+(defn rotate-thru-carry-right
+  "Rotate right the bits at `register-or-addr` using the carry flag as the 9th bit.
+   Returns `[new-val new-c]`"
+  [old-val old-c]
+  [(bit-or (bit-shift-right old-val 1)
+           (bit-shift-left old-c 7))
+   (bit-and old-val 0x01)])
+
+

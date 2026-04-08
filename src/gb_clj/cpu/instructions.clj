@@ -5,6 +5,17 @@
    [gb-clj.cpu.prefix-instructions :as prefix]
    [gb-clj.cpu.util :as util]))
 
+(defn rotate-a [state rotate-fn]
+  (let [old-a (get-in state [:cpu :a])
+        old-c (if (util/flag-set? state util/C-mask) 1 0)
+        [new-a new-c] (rotate-fn old-a old-c)]
+    (-> state
+        (assoc-in [:cpu :a] new-a)
+        (util/unset-flag util/Z-mask)
+        (util/unset-flag util/N-mask)
+        (util/unset-flag util/H-mask)
+        (util/update-flag util/C-mask (pos? new-c)))))
+
 (defmulti execute (fn [_state opcode] opcode))
 
 (defmethod execute 0x00 NOP
@@ -33,6 +44,10 @@
   [state _]
   (util/load8-immediate state :b))
 
+(defmethod execute 0x07 RLC_A
+  [state _]
+  (rotate-a state util/rotate-left-circular))
+
 (defmethod execute 0x0A LD_A_ADDR_BC
   [state _]
   (util/load-r-from-addr16 state :a :b :c))
@@ -46,6 +61,10 @@
 (defmethod execute 0x0E LD_C_N
   [state _]
   (util/load8-immediate state :c))
+
+(defmethod execute 0x0F RRC_A
+  [state _]
+  (rotate-a state util/rotate-right-circular))
 
 (defmethod execute 0x11 LD_DE_NN
   [state _]
@@ -82,6 +101,10 @@
   [state _]
   (util/load8-immediate state :d))
 
+(defmethod execute 0x17 RL_A
+  [state _]
+  (rotate-a state util/rotate-thru-carry-left))
+
 (defmethod execute 0x18 JR_r8
   [state _]
   (let [offset (util/as-signed-8 (bus/read-byte state (inc (get-in state [:cpu :pc]))))]
@@ -108,6 +131,10 @@
 (defmethod execute 0x1E LD_E_N
   [state _]
   (util/load8-immediate state :e))
+
+(defmethod execute 0x1F RR_A
+  [state _]
+  (rotate-a state util/rotate-thru-carry-right))
 
 (defmethod execute 0x20 JR_NZ_r8
   [state _]

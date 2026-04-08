@@ -46,7 +46,9 @@
 
 (defmethod execute 0x07 RLC_A
   [state _]
-  (rotate-a state util/rotate-left-circular))
+  (-> (rotate-a state util/rotate-left-circular)
+      (util/inc-pc)
+      (util/tick 4)))
 
 (defmethod execute 0x0A LD_A_ADDR_BC
   [state _]
@@ -64,7 +66,9 @@
 
 (defmethod execute 0x0F RRC_A
   [state _]
-  (rotate-a state util/rotate-right-circular))
+  (-> (rotate-a state util/rotate-right-circular)
+      (util/inc-pc)
+      (util/tick 4)))
 
 (defmethod execute 0x11 LD_DE_NN
   [state _]
@@ -103,7 +107,9 @@
 
 (defmethod execute 0x17 RL_A
   [state _]
-  (rotate-a state util/rotate-thru-carry-left))
+  (-> (rotate-a state util/rotate-thru-carry-left)
+      (util/inc-pc)
+      (util/tick 4)))
 
 (defmethod execute 0x18 JR_r8
   [state _]
@@ -134,7 +140,9 @@
 
 (defmethod execute 0x1F RR_A
   [state _]
-  (rotate-a state util/rotate-thru-carry-right))
+  (-> (rotate-a state util/rotate-thru-carry-right)
+      (util/inc-pc)
+      (util/tick 4)))
 
 (defmethod execute 0x20 JR_NZ_r8
   [state _]
@@ -205,6 +213,17 @@
 (defmethod execute 0x2E LD_L_N
   [state _]
   (util/load8-immediate state :l))
+
+(defmethod execute 0x30 JR_NC_N
+  [state _]
+  (let [pc (get-in state [:cpu :pc])
+        offset (util/as-signed-8 (bus/read-byte state (inc pc)))
+        jump? (not (util/flag-set? state util/C-mask))]
+    (cond-> (-> state
+                (util/inc-pc 2)
+                (util/tick 8))
+      jump? (-> (update-in [:cpu :pc] #(bit-and 0xFFFF (+ % offset)))
+                (util/tick 4)))))
 
 (defmethod execute 0x31 LD_SP_NN
   [state _]

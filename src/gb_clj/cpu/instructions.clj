@@ -678,10 +678,14 @@
         (util/inc-pc)
         (util/tick 4))))
 
+(defmethod execute 0xC0 RET_NZ
+  [state _]
+  (util/maybe-ret state #(not (util/flag-set? % util/Z-mask))))
+
 (defmethod execute 0xC1 POP_BC
   [state _]
   (-> state
-      (util/pop16 :b :c)
+      (util/pop-r-16 :b :c)
       (util/inc-pc)
       (util/tick 12)))
 
@@ -714,7 +718,7 @@
 (defmethod execute 0xC5 PUSH_BC
   [state _]
   (-> state
-      (util/push16 :b :c)
+      (util/push-r-16 :b :c)
       (util/inc-pc)
       (util/tick 16)))
 
@@ -731,6 +735,10 @@
         (util/update-flag util/C-mask (> (+ a n) 0xFF))
         (util/inc-pc 2)
         (util/tick 8))))
+
+(defmethod execute 0xC8 RET_Z
+  [state _]
+  (util/maybe-ret state #(util/flag-set? % util/Z-mask)))
 
 (defmethod execute 0xC9 RET
   [state _]
@@ -773,17 +781,21 @@
         (util/inc-pc 2)
         (util/tick 8))))
 
+(defmethod execute 0xD0 RET_NC
+  [state _]
+  (util/maybe-ret state #(not (util/flag-set? % util/C-mask))))
+
 (defmethod execute 0xD1 POP_DE
   [state _]
   (-> state
-      (util/pop16 :d :e)
+      (util/pop-r-16 :d :e)
       (util/inc-pc)
       (util/tick 12)))
 
 (defmethod execute 0xD5 PUSH_DE
   [state _]
   (-> state
-      (util/push16 :d :e)
+      (util/push-r-16 :d :e)
       (util/inc-pc)
       (util/tick 16)))
 
@@ -801,6 +813,10 @@
         (util/inc-pc 2)
         (util/tick 8))))
 
+(defmethod execute 0xD8 RET_C
+  [state _]
+  (util/maybe-ret state #(util/flag-set? % util/C-mask)))
+
 (defmethod execute 0xE0 LDH_ADDR_A8_A
   [state _]
   (let [addr (-> (bus/read-byte state (inc (get-in state [:cpu :pc])))
@@ -813,7 +829,7 @@
 (defmethod execute 0xE1 POP_HL
   [state _]
   (-> state
-      (util/pop16 :h :l)
+      (util/pop-r-16 :h :l)
       (util/inc-pc)
       (util/tick 12)))
 
@@ -842,7 +858,7 @@
 (defmethod execute 0xE5 PUSH_HL
   [state _]
   (-> state
-      (util/push16 :h :l)
+      (util/push-r-16 :h :l)
       (util/inc-pc)
       (util/tick 16)))
 
@@ -874,7 +890,7 @@
 (defmethod execute 0xF1 POP_AF
   [state _]
   (-> state
-      (util/pop16 :a :f)
+      (util/pop-r-16 :a :f)
       (util/inc-pc)
       (util/tick 12)))
 
@@ -898,7 +914,7 @@
 (defmethod execute 0xF5 PUSH_AF
   [state _]
   (-> state
-      (util/push16 :a :f)
+      (util/push-r-16 :a :f)
       (util/inc-pc)
       (util/tick 16)))
 

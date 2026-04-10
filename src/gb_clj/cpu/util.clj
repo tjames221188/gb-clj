@@ -115,25 +115,34 @@
         (set16 r1 r2 nn)
         (inc-pc 3))))
 
-(defn pop16 [state r1 r2]
+(defn pop-val-16 [state]
   (let [sp (get-in state [:cpu :sp])
-        low (cond-> (bus/read-byte state sp)
-              ; lower nibble of f register must always be zero
-              (= :f r2) (bit-and 0xF0))
+        low (bus/read-byte state sp)
         high (bus/read-byte state (inc sp))]
-    (-> state
-        (assoc-in [:cpu r1] high)
-        (assoc-in [:cpu r2] low)
-        (update-in [:cpu :sp] #(bit-and 0xFFFF (+ % 2))))))
+    [[high low]
+     (update-in state [:cpu :sp] #(bit-and 0xFFFF (+ % 2)))]))
 
-(defn push16 [state r1 r2]
+(defn push-val-16 [state val]
   (let [sp (get-in state [:cpu :sp])
         h-addr (bit-and 0xFFFF (dec sp))
-        l-addr (bit-and 0xFFFF (dec h-addr))]
+        l-addr (bit-and 0xFFFF (dec h-addr))
+        [h-val l-val] (split val)]
     (-> state
-        (bus/write-byte h-addr (get-in state [:cpu r1]))
-        (bus/write-byte l-addr (get-in state [:cpu r2]))
+        (bus/write-byte h-addr h-val)
+        (bus/write-byte l-addr l-val)
         (assoc-in [:cpu :sp] l-addr))))
+
+(defn pop-r-16 [state r1 r2]
+  (let [[[high low] state] (pop-val-16 state)]
+    (-> state
+        (assoc-in [:cpu r1] high)
+        (assoc-in [:cpu r2] (cond-> low (= :f r2) (bit-and 0xF0))))))
+
+(defn push-r-16 [state r1 r2]
+  (let [val (->> (:cpu state)
+                 ((juxt r1 r2))
+                 (apply combine))]
+    (push-val-16 state val)))
 
 (defn copy-register [state r-src r-dest]
   (let [v (get-in state [:cpu r-src])]
@@ -224,3 +233,12 @@
         (update-flag H-mask h?)
         (update-flag C-mask c?))))
 
+(defn maybe-ret
+  [state pred]
+  (if (pred state)
+    (let [[[high low] state] (pop-val-16 state)]
+      (-> state
+          (assoc-in [:cpu :pc] (combine high low))
+          (tick 20)))
+    (-> (inc-pc state)
+        (tick 8))))

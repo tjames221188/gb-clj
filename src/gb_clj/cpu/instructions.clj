@@ -667,6 +667,21 @@
         (util/inc-pc)
         (util/tick 4))))
 
+(defmethod execute 0xB6 OR_ADDR_HL
+  [state _]
+  (let [addr (util/get16 state :h :l)
+        val (bus/read-byte state addr)
+        a (get-in state [:cpu :a])
+        result (bit-or val a)]
+    (-> state
+        (assoc-in [:cpu :a] a)
+        (util/update-flag util/Z-mask (zero? result))
+        (util/unset-flag util/N-mask)
+        (util/unset-flag util/H-mask)
+        (util/unset-flag util/C-mask)
+        (util/inc-pc)
+        (util/tick 8))))
+
 (defmethod execute 0xB7 OR_A_A
   [state _]
   (let [a (get-in state [:cpu :a])]

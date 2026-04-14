@@ -40,7 +40,7 @@
 
 (defmethod execute 0x05 DEC_B
   [state _]
-  (-> (util/dec8 state :b)
+  (-> (util/dec-r8 state :b)
       (util/inc-pc)
       (util/tick 4)))
 
@@ -58,9 +58,15 @@
   [state _]
   (util/load-r-from-addr16 state :a :b :c))
 
+(defmethod execute 0x0B INC_BC
+  [state _]
+  (-> (util/dec-r16 state :b :c)
+      (util/inc-pc)
+      (util/tick 8)))
+
 (defmethod execute 0x0D DEC_C
   [state _]
-  (-> (util/dec8 state :c)
+  (-> (util/dec-r8 state :c)
       (util/inc-pc)
       (util/tick 4)))
 
@@ -91,13 +97,13 @@
 
 (defmethod execute 0x14 INC_D
   [state _]
-  (-> (util/inc8 state :d)
+  (-> (util/inc-r8 state :d)
       (util/inc-pc)
       (util/tick 4)))
 
 (defmethod execute 0x15 DEC_D
   [state _]
-  (-> (util/dec8 state :d)
+  (-> (util/dec-r8 state :d)
       (util/inc-pc)
       (util/tick 4)))
 
@@ -122,15 +128,21 @@
   [state _]
   (util/load-r-from-addr16 state :a :d :e))
 
+(defmethod execute 0x1B INC_DE
+  [state _]
+  (-> (util/dec-r16 state :d :e)
+      (util/inc-pc)
+      (util/tick 8)))
+
 (defmethod execute 0x1C INC_E
   [state _]
-  (-> (util/inc8 state :e)
+  (-> (util/inc-r8 state :e)
       (util/inc-pc)
       (util/tick 4)))
 
 (defmethod execute 0x1D DEC_E
   [state _]
-  (-> (util/dec8 state :e)
+  (-> (util/dec-r8 state :e)
       (util/inc-pc)
       (util/tick 4)))
 
@@ -170,13 +182,13 @@
 
 (defmethod execute 0x24 INC_H
   [state _]
-  (-> (util/inc8 state :h)
+  (-> (util/inc-r8 state :h)
       (util/inc-pc)
       (util/tick 4)))
 
 (defmethod execute 0x25 DEC_H
   [state _]
-  (-> (util/dec8 state :h)
+  (-> (util/dec-r8 state :h)
       (util/inc-pc)
       (util/tick 4)))
 
@@ -198,15 +210,21 @@
         (util/inc-pc)
         (util/tick 8))))
 
+(defmethod execute 0x2B INC_HL
+  [state _]
+  (-> (util/dec-r16 state :h :l)
+      (util/inc-pc)
+      (util/tick 8)))
+
 (defmethod execute 0x2C INC_L
   [state _]
-  (-> (util/inc8 state :l)
+  (-> (util/inc-r8 state :l)
       (util/inc-pc)
       (util/tick 4)))
 
 (defmethod execute 0x2D DEC_L
   [state _]
-  (-> (util/dec8 state :l)
+  (-> (util/dec-r8 state :l)
       (util/inc-pc)
       (util/tick 4)))
 
@@ -239,9 +257,18 @@
   (let [addr (util/get16 state :h :l)]
     (-> state
         (bus/write-byte addr (get-in state [:cpu :a]))
-        (util/dec16 :h :l)
+        (util/dec-r16 :h :l)
         (util/inc-pc)
         (util/tick 8))))
+
+(defmethod execute 0x35 DEC_ADDR_HL
+  [state _]
+  (let [addr (util/get16 state :h :l)
+        prev (bus/read-byte state addr)
+        [val state] (util/dec8 state prev)]
+    (-> (bus/write-byte state addr val)
+        (util/inc-pc)
+        (util/tick 12))))
 
 (defmethod execute 0x36 LD_ADDR_HL_N
   [state _]
@@ -254,13 +281,19 @@
         val (bus/read-byte state addr)]
     (-> state
         (assoc-in [:cpu :a] val)
-        (util/dec16 :h :l)
+        (util/dec-r16 :h :l)
         (util/inc-pc)
         (util/tick 8))))
 
+(defmethod execute 0x3B INC_SP
+  [state _]
+  (-> (util/dec-r16 state :sp)
+      (util/inc-pc)
+      (util/tick 8)))
+
 (defmethod execute 0x3D DEC_A
   [state _]
-  (-> (util/dec8 state :a)
+  (-> (util/dec-r8 state :a)
       (util/inc-pc)
       (util/tick 4)))
 

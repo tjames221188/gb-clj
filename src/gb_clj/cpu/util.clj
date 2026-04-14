@@ -1,5 +1,7 @@
 (ns gb-clj.cpu.util
-  (:require [gb-clj.bus :as bus]))
+  (:require
+   [clojure.tools.logging :as log]
+   [gb-clj.bus :as bus]))
 
 (defn tick [state n]
   (update-in state [:cpu :t-cycles] + n))
@@ -47,38 +49,46 @@
         (assoc-in [:cpu r1] high)
         (assoc-in [:cpu r2] low))))
 
-(defn dec8 [state r]
-  (let [prev (get-in state [:cpu r])
-        val (bit-and 0xFF (dec prev))
+(defn dec8 [state prev]
+  (let [val (bit-and 0xFF (dec prev))
         h? (zero? (bit-and 0xF prev)) ;; will always "borrow" from upper nibble if lower nibble is 0000
         ]
-    (-> state
-        (assoc-in [:cpu r] val)
-        (set-flag N-mask)
-        (update-flag Z-mask (zero? val))
-        (update-flag H-mask h?))))
+    [val (-> state
+             (set-flag N-mask)
+             (update-flag Z-mask (zero? val))
+             (update-flag H-mask h?))]))
 
-(defn dec16 [state r1 r2]
-  (let [[r1-v r2-v] (->> (:cpu state)
-                         ((juxt r1 r2))
-                         (apply combine)
-                         (dec)
-                         (bit-and 0xFFFF)
-                         (split))]
-    (-> state
-        (assoc-in [:cpu r1] r1-v)
-        (assoc-in [:cpu r2] r2-v))))
-
-(defn inc8 [state r]
+(defn dec-r8 [state r]
   (let [prev (get-in state [:cpu r])
-        val (bit-and 0xFF (inc prev))
+        [val state] (dec8 state prev)]
+    (assoc-in state  [:cpu r] val)))
+
+(defn dec-r16
+  ([state r]
+   (when (not= :sp r)
+     (log/warn "single register dec16, but not stack pointer! ( " r " )"))
+   (update-in state [:cpu r] (comp #(bit-and 0xFFFF %) dec)))
+  ([state r1 r2]
+   (->> (:cpu state)
+        ((juxt r1 r2))
+        (apply combine)
+        (dec)
+        (bit-and 0xFFFF)
+        (set16 state r1 r2))))
+
+(defn inc8 [state prev]
+  (let [val (bit-and 0xFF (inc prev))
         z? (zero? val)
         h? (= 0x0F (bit-and prev 0x0F))]
-    (-> state
-        (assoc-in [:cpu r] val)
-        (unset-flag N-mask)
-        (update-flag Z-mask z?)
-        (update-flag H-mask h?))))
+    [val (-> state
+             (unset-flag N-mask)
+             (update-flag Z-mask z?)
+             (update-flag H-mask h?))]))
+
+(defn inc-r8 [state r]
+  (let [prev (get-in state [:cpu r])
+        [val state] (inc8 state prev)]
+    (assoc-in state [:cpu r] val)))
 
 (defn inc16 [state r1 r2]
   ;; TODO - this currently only works for register pairs. the stack pointer is 

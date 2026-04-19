@@ -498,6 +498,12 @@
   [state _]
   (util/load-r-from-addr16 state :l :h :l))
 
+(defmethod execute 0x6F LD_L_A
+  [state _]
+  (-> (util/copy-register state :a :l)
+      (util/inc-pc)
+      (util/tick 4)))
+
 (defmethod execute 0x70 LD_ADDR_HL_B
   [state _]
   (util/write-r-to-addr16 state :b :h :l))

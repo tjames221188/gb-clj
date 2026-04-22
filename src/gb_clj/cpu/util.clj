@@ -103,6 +103,18 @@
         (assoc-in [:cpu r1] r1-v)
         (assoc-in [:cpu r2] r2-v))))
 
+(defn add-hl [state val]
+  (let [hl (get16 state :h :l)
+        result (+ hl val)
+        new-hl (bit-and 0xFFFF result)
+        h? (> (+ (bit-and hl 0xFFF) (bit-and val 0xFFF)) 0xFFF)
+        c? (> result 0xFFFF)]
+    (-> state
+        (set16 :h :l new-hl)
+        (unset-flag N-mask)
+        (update-flag H-mask h?)
+        (update-flag C-mask c?))))
+
 (defn load8-immediate
   [state register-or-addr]
   (let [pc (get-in state [:cpu :pc])

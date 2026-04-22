@@ -54,6 +54,12 @@
       (util/inc-pc)
       (util/tick 4)))
 
+(defmethod execute 0x09 ADD_HL_BC
+  [state _]
+  (-> (util/add-hl state (util/get16 state :b :c))
+      (util/inc-pc)
+      (util/tick 8)))
+
 (defmethod execute 0x0A LD_A_ADDR_BC
   [state _]
   (util/load-r-from-addr16 state :a :b :c))
@@ -123,6 +129,12 @@
     (-> state
         (util/inc-pc (+ 2 offset))
         (util/tick 12))))
+
+(defmethod execute 0x19 ADD_HL_DE
+  [state _]
+  (-> (util/add-hl state (util/get16 state :d :e))
+      (util/inc-pc)
+      (util/tick 8)))
 
 (defmethod execute 0x1A LD_A_ADDR_DE
   [state _]
@@ -200,6 +212,12 @@
   [state _]
   (util/jump-relative-pred-r8 state #(util/flag-set? % util/Z-mask)))
 
+(defmethod execute 0x29 ADD_HL_HL
+  [state _]
+  (-> (util/add-hl state (util/get16 state :h :l))
+      (util/inc-pc)
+      (util/tick 8)))
+
 (defmethod execute 0x2A LD_A_ADDR_HLI
   [state _]
   (let [addr (util/get16 state :h :l)
@@ -275,7 +293,13 @@
   (let [addr (util/get16 state :h :l)]
     (util/load8-immediate state addr)))
 
-(defmethod execute 0x3A  LD_A_ADDR_HL_DEC
+(defmethod execute 0x39 ADD_HL_SP
+  [state _]
+  (-> (util/add-hl state (get-in state [:cpu :sp]))
+      (util/inc-pc)
+      (util/tick 8)))
+
+(defmethod execute 0x3A LD_A_ADDR_HL_DEC
   [state _]
   (let [addr (util/get16 state :h :l)
         val (bus/read-byte state addr)]

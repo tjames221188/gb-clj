@@ -38,6 +38,12 @@
       (util/inc-pc)
       (util/tick 8)))
 
+(defmethod execute 0x04 INC_B
+  [state _]
+  (-> (util/inc-r8 state :b)
+      (util/inc-pc)
+      (util/tick 4)))
+
 (defmethod execute 0x05 DEC_B
   [state _]
   (-> (util/dec-r8 state :b)
@@ -69,6 +75,12 @@
   (-> (util/dec-r16 state :b :c)
       (util/inc-pc)
       (util/tick 8)))
+
+(defmethod execute 0x0C INC_C
+  [state _]
+  (-> (util/inc-r8 state :c)
+      (util/inc-pc)
+      (util/tick 4)))
 
 (defmethod execute 0x0D DEC_C
   [state _]
@@ -314,6 +326,12 @@
   (-> (util/dec-r16 state :sp)
       (util/inc-pc)
       (util/tick 8)))
+
+(defmethod execute 0x3C INC_A
+  [state _]
+  (-> (util/inc-r8 state :a)
+      (util/inc-pc)
+      (util/tick 4)))
 
 (defmethod execute 0x3D DEC_A
   [state _]
@@ -916,6 +934,12 @@
         (util/unset-flag util/C-mask)
         (util/inc-pc 2)
         (util/tick 8))))
+
+(defmethod execute 0xE9 JP_HL
+  [state _]
+  (-> state
+      (assoc-in [:cpu :pc] (util/get16 state :h :l))
+      (util/tick 4)))
 
 (defmethod execute 0xEA LD_ADDR_A16_A
   [state _]

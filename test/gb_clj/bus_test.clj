@@ -1,10 +1,10 @@
 (ns gb-clj.bus-test
   (:require [clojure.test :refer :all]
             [gb-clj.bus :as bus]
-            [gb-clj.cpu :as cpu]))
+            [gb-clj.core :as core]))
 
 (deftest test-bus-boundaries
-  (let [state (assoc (cpu/initial-state) :memory (vec (repeat 65536 0)))]
+  (let [state (core/initial-state)]
     (testing "ROM Boundary (0x0000 - 0x7FFF)"
       (is (true? (= state (bus/write-byte state 0x0000 0xFF))) "Start of ROM")
       (is (true? (= state (bus/write-byte state 0x7FFF 0xFF))) "End of ROM")

@@ -58,7 +58,7 @@
   [state _]
   (util/load-r-from-addr16 state :a :b :c))
 
-(defmethod execute 0x0B INC_BC
+(defmethod execute 0x0B DEC_BC
   [state _]
   (-> (util/dec-r16 state :b :c)
       (util/inc-pc)
@@ -128,7 +128,7 @@
   [state _]
   (util/load-r-from-addr16 state :a :d :e))
 
-(defmethod execute 0x1B INC_DE
+(defmethod execute 0x1B DEC_DE
   [state _]
   (-> (util/dec-r16 state :d :e)
       (util/inc-pc)
@@ -210,7 +210,7 @@
         (util/inc-pc)
         (util/tick 8))))
 
-(defmethod execute 0x2B INC_HL
+(defmethod execute 0x2B DEC_HL
   [state _]
   (-> (util/dec-r16 state :h :l)
       (util/inc-pc)
@@ -285,7 +285,7 @@
         (util/inc-pc)
         (util/tick 8))))
 
-(defmethod execute 0x3B INC_SP
+(defmethod execute 0x3B DEC_SP
   [state _]
   (-> (util/dec-r16 state :sp)
       (util/inc-pc)
@@ -528,7 +528,7 @@
   [state _]
   (util/write-r-to-addr16 state :l :h :l))
 
-(defmethod execute 0x77 LD_HL_ADDR_A
+(defmethod execute 0x77 LD_ADDR_HL_A
   [state _]
   (let [addr (util/get16 state :h :l)]
     (-> state
@@ -574,7 +574,7 @@
 
 (defmethod execute 0x7E LD_A_ADDR_HL
   [state _]
-  (util/load-r-from-addr16 state :l :h :l))
+  (util/load-r-from-addr16 state :a :h :l))
 
 (defmethod execute 0x88 ADC_A_B
   [state _]
@@ -679,7 +679,7 @@
       (util/inc-pc)
       (util/tick 4)))
 
-(defmethod execute 0xAE XOR_A_ADDR_HL
+(defmethod execute 0xAE XOR_ADDR_HL
   [state _]
   (let [addr (util/get16 state :h :l)
         val (bus/read-byte state addr)]
@@ -693,44 +693,35 @@
       (util/inc-pc)
       (util/tick 4)))
 
-(defmethod execute 0xB1 OR_C
-  [state _]
-  (let [{:keys [a c]} (:cpu state)
-        val (bit-or a c)]
+(defn or-val [state v]
+  (let [a (get-in state [:cpu :a])
+        val (bit-or a v)]
     (-> state
         (assoc-in [:cpu :a] val)
         (util/update-flag util/Z-mask (zero? val))
         (util/unset-flag util/N-mask)
         (util/unset-flag util/H-mask)
-        (util/unset-flag util/C-mask)
-        (util/inc-pc)
-        (util/tick 4))))
+        (util/unset-flag util/C-mask))))
+
+(defmethod execute 0xB1 OR_C
+  [state _]
+  (-> (or-val state (get-in state [:cpu :c]))
+      (util/inc-pc)
+      (util/tick 4)))
 
 (defmethod execute 0xB6 OR_ADDR_HL
   [state _]
   (let [addr (util/get16 state :h :l)
-        val (bus/read-byte state addr)
-        a (get-in state [:cpu :a])
-        result (bit-or val a)]
-    (-> state
-        (assoc-in [:cpu :a] a)
-        (util/update-flag util/Z-mask (zero? result))
-        (util/unset-flag util/N-mask)
-        (util/unset-flag util/H-mask)
-        (util/unset-flag util/C-mask)
+        val (bus/read-byte state addr)]
+    (-> (or-val state val)
         (util/inc-pc)
         (util/tick 8))))
 
-(defmethod execute 0xB7 OR_A_A
+(defmethod execute 0xB7 OR_A
   [state _]
-  (let [a (get-in state [:cpu :a])]
-    (-> state
-        (util/update-flag util/Z-mask (zero? a))
-        (util/unset-flag util/N-mask)
-        (util/unset-flag util/H-mask)
-        (util/unset-flag util/C-mask)
-        (util/inc-pc)
-        (util/tick 4))))
+  (-> (or-val state (get-in state [:cpu :a]))
+      (util/inc-pc)
+      (util/tick 4)))
 
 (defmethod execute 0xC0 RET_NZ
   [state _]
@@ -753,19 +744,13 @@
   [state _]
   (let [pc (get-in state [:cpu :pc])
         return-addr (bit-and 0xFFFF (+ pc 3))
-        [high low] (util/split return-addr)
-        target-addr (bus/read-word state (inc pc))
-        sp (get-in state [:cpu :sp])]
+        target-addr (bus/read-word state (inc pc))]
     (if (util/flag-set? state util/Z-mask)
       (-> state
           (util/inc-pc 3)
           (util/tick 12))
       (-> state
-        ;; Push return address to stack
-          (bus/write-byte (dec sp) high)
-          (bus/write-byte (- sp 2) low)
-        ;; Update Registers
-          (assoc-in [:cpu :sp] (- sp 2))
+          (util/push-val-16 return-addr)
           (assoc-in [:cpu :pc] target-addr)
           (util/tick 24)))))
 
@@ -796,11 +781,9 @@
 
 (defmethod execute 0xC9 RET
   [state _]
-  (let [sp (get-in state [:cpu :sp])
-        return-addr (bus/read-word state sp)]
+  (let [[[high low] state] (util/pop-val-16 state)]
     (-> state
-        (assoc-in [:cpu :sp] (bit-and 0xFFFF (+ sp 2)))
-        (assoc-in [:cpu :pc] return-addr)
+        (assoc-in [:cpu :pc] (util/combine high low))
         (util/tick 16))))
 
 (defmethod execute 0xCB PREFIX_CB
@@ -816,15 +799,9 @@
   [state _]
   (let [pc (get-in state [:cpu :pc])
         return-addr (bit-and 0xFFFF (+ pc 3))
-        [high low] (util/split return-addr)
-        target-addr (bus/read-word state (inc pc))
-        sp (get-in state [:cpu :sp])]
+        target-addr (bus/read-word state (inc pc))]
     (-> state
-        ;; Push return address to stack
-        (bus/write-byte (dec sp) high)
-        (bus/write-byte (- sp 2) low)
-        ;; Update Registers
-        (assoc-in [:cpu :sp] (- sp 2))
+        (util/push-val-16 return-addr)
         (assoc-in [:cpu :pc] target-addr)
         (util/tick 24))))
 
@@ -895,6 +872,13 @@
         (util/inc-pc)
         (util/tick 8))))
 
+(defmethod execute 0xE5 PUSH_HL
+  [state _]
+  (-> state
+      (util/push-r-16 :h :l)
+      (util/inc-pc)
+      (util/tick 16)))
+
 (defmethod execute 0xE6 AND_N
   [state _]
   (let [a (get-in state [:cpu :a])
@@ -908,13 +892,6 @@
         (util/unset-flag util/C-mask)
         (util/inc-pc 2)
         (util/tick 8))))
-
-(defmethod execute 0xE5 PUSH_HL
-  [state _]
-  (-> state
-      (util/push-r-16 :h :l)
-      (util/inc-pc)
-      (util/tick 16)))
 
 (defmethod execute 0xEA LD_ADDR_A16_A
   [state _]

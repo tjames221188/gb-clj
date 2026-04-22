@@ -11,7 +11,7 @@
 (defn initial-state []
   {:cpu (cpu/initial-state)
    :memory (vec (repeat 0x10000 0))
-   :serial-output ""})
+   :serial-out ""})
 
 (defn load-rom [state path]
   (let [rom-data (cart/load-file path)]

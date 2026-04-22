@@ -69,30 +69,30 @@
   [state _]
   (rotate state util/rotate-right-circular :c))
 
-(defmethod execute-prefix 0x0a RRC_D
+(defmethod execute-prefix 0x0A RRC_D
   [state _]
   (rotate state util/rotate-right-circular :d))
 
-(defmethod execute-prefix 0x0b RRC_E
+(defmethod execute-prefix 0x0B RRC_E
   [state _]
   (rotate state util/rotate-right-circular :e))
 
-(defmethod execute-prefix 0x0c RRC_H
+(defmethod execute-prefix 0x0C RRC_H
   [state _]
   (rotate state util/rotate-right-circular :h))
 
-(defmethod execute-prefix 0x0d RRC_L
+(defmethod execute-prefix 0x0D RRC_L
   [state _]
   (rotate state util/rotate-right-circular :l))
 
-(defmethod execute-prefix 0x0e RRC_ADDR_HL
+(defmethod execute-prefix 0x0E RRC_ADDR_HL
   [state _]
   (let [address (util/get16 state :h :l)]
     (-> (rotate state util/rotate-right-circular address)
         ;; extra cycles because of read + write from/to memory
         (util/tick 8))))
 
-(defmethod execute-prefix 0x0f RRC_A
+(defmethod execute-prefix 0x0F RRC_A
   [state _]
   (rotate state util/rotate-right-circular :a))
 

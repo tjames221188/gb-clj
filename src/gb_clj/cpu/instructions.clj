@@ -776,6 +776,10 @@
       (util/inc-pc)
       (util/tick 12)))
 
+(defmethod execute 0xC2 JP_NZ_NN
+  [state _]
+  (util/jump-relative-pred-a16 state (complement #(util/flag-set? % util/Z-mask))))
+
 (defmethod execute 0xC3 JP_NN
   [state _]
   (let [addr (bus/read-word state (inc (get-in state [:cpu :pc])))]
@@ -828,6 +832,10 @@
         (assoc-in [:cpu :pc] (util/combine high low))
         (util/tick 16))))
 
+(defmethod execute 0xCA JP_Z_NN
+  [state _]
+  (util/jump-relative-pred-a16 state #(util/flag-set? % util/Z-mask)))
+
 (defmethod execute 0xCB PREFIX_CB
   [state _]
   (let [pc (get-in state [:cpu :pc])
@@ -865,6 +873,10 @@
       (util/inc-pc)
       (util/tick 12)))
 
+(defmethod execute 0xD2 JP_NC_NN
+  [state _]
+  (util/jump-relative-pred-a16 state (complement #(util/flag-set? % util/C-mask))))
+
 (defmethod execute 0xD5 PUSH_DE
   [state _]
   (-> state
@@ -889,6 +901,10 @@
 (defmethod execute 0xD8 RET_C
   [state _]
   (util/maybe-ret state #(util/flag-set? % util/C-mask)))
+
+(defmethod execute 0xDA JP_C_NN
+  [state _]
+  (util/jump-relative-pred-a16 state #(util/flag-set? % util/C-mask)))
 
 (defmethod execute 0xE0 LDH_ADDR_A8_A
   [state _]

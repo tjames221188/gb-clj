@@ -186,6 +186,17 @@
           (inc-pc 2)
           (tick 8)))))
 
+(defn jump-relative-pred-a16
+  [state pred?]
+  (let [addr (bus/read-word state (inc (get-in state [:cpu :pc])))]
+    (if (pred? state)
+      (-> state
+          (assoc-in [:cpu :pc] addr)
+          (tick 16))
+      (-> state
+          (inc-pc 3)
+          (tick 12)))))
+
 (defn half-carry?
   "works for addition and subtraction"
   [a b result]

@@ -16,6 +16,12 @@
         (util/unset-flag util/H-mask)
         (util/update-flag util/C-mask (pos? new-c)))))
 
+(defn low-nibble-overflow? [a]
+  (> (bit-and a 0x0F) 0x09))
+
+(defn high-nibble-overflow? [a]
+  (> a 0x99))
+
 (defn compare-val [state val]
   (let [acc (get-in state [:cpu :a])
         result (- acc val)
@@ -229,6 +235,24 @@
 (defmethod execute 0x26 LD_H_N
   [state _]
   (util/load8-immediate state :h))
+
+(defmethod execute 0x27 DAA
+  [state _]
+  (let [a (get-in state [:cpu :a])
+        n? (util/flag-set? state util/N-mask)
+        h? (util/flag-set? state util/H-mask)
+        c? (util/flag-set? state util/C-mask)
+        correct-low? (or h? (and (not n?) (low-nibble-overflow? a)))
+        correct-high? (or c? (and (not n?) (high-nibble-overflow? a)))
+        adj (+ (if correct-high? 0x60 0) (if correct-low? 0x06 0))
+        new-a (bit-and 0xFF (if n? (- a adj) (+ a adj)))]
+    (-> state
+        (assoc-in [:cpu :a] new-a)
+        (util/update-flag util/Z-mask (zero? new-a))
+        (util/unset-flag util/H-mask)
+        (util/update-flag util/C-mask correct-high?)
+        (util/inc-pc)
+        (util/tick 4))))
 
 (defmethod execute 0x28 JR_Z_r8
   [state _]

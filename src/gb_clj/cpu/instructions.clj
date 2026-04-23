@@ -1083,7 +1083,9 @@
 (defmethod execute 0xFE CP_N
   [state _]
   (let [val (bus/read-byte state (inc (get-in state [:cpu :pc])))]
-    (compare-val state val)))
+    (-> (compare-val state val)
+        (util/inc-pc 2)
+        (util/tick 8))))
 
 (defmethod execute :default
   [state opcode]

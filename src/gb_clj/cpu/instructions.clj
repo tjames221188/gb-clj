@@ -16,6 +16,16 @@
         (util/unset-flag util/H-mask)
         (util/update-flag util/C-mask (pos? new-c)))))
 
+(defn compare-val [state val]
+  (let [acc (get-in state [:cpu :a])
+        result (- acc val)
+        half-carry? (< (bit-and 0x0F acc) (bit-and 0x0F val))]
+    (-> state
+        (util/update-flag util/Z-mask (zero? result))
+        (util/set-flag util/N-mask)
+        (util/update-flag util/H-mask half-carry?)
+        (util/update-flag util/C-mask (< acc val)))))
+
 (defmulti execute (fn [_state opcode] opcode))
 
 (defmethod execute 0x00 NOP
@@ -765,6 +775,54 @@
       (util/inc-pc)
       (util/tick 4)))
 
+(defmethod execute 0xB8 CP_B
+  [state _]
+  (-> (compare-val state (get-in state [:cpu :b]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0xB9 CP_C
+  [state _]
+  (-> (compare-val state (get-in state [:cpu :c]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0xBA CP_D
+  [state _]
+  (-> (compare-val state (get-in state [:cpu :d]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0xBB CP_E
+  [state _]
+  (-> (compare-val state (get-in state [:cpu :e]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0xBC CP_H
+  [state _]
+  (-> (compare-val state (get-in state [:cpu :h]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0xBD CP_L
+  [state _]
+  (-> (compare-val state (get-in state [:cpu :l]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0xBE CP_ADDR_HL
+  [state _]
+  (-> (compare-val state (bus/read-byte state (util/get16 state :h :l)))
+      (util/inc-pc)
+      (util/tick 8)))
+
+(defmethod execute 0xBF CP_A
+  [state _]
+  (-> (compare-val state (get-in state [:cpu :a]))
+      (util/inc-pc)
+      (util/tick 4)))
+
 (defmethod execute 0xC0 RET_NZ
   [state _]
   (util/maybe-ret state #(not (util/flag-set? % util/Z-mask))))
@@ -1024,17 +1082,8 @@
 
 (defmethod execute 0xFE CP_N
   [state _]
-  (let [val (bus/read-byte state (inc (get-in state [:cpu :pc])))
-        acc (get-in state [:cpu :a])
-        result (- acc val)
-        half-carry? (< (bit-and 0x0F acc) (bit-and 0x0F val))]
-    (-> state
-        (util/update-flag util/Z-mask (zero? result))
-        (util/set-flag util/N-mask)
-        (util/update-flag util/H-mask half-carry?)
-        (util/update-flag util/C-mask (< acc val))
-        (util/inc-pc 2)
-        (util/tick 8))))
+  (let [val (bus/read-byte state (inc (get-in state [:cpu :pc])))]
+    (compare-val state val)))
 
 (defmethod execute :default
   [state opcode]

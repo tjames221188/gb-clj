@@ -1,6 +1,6 @@
 # Implementation Progress
 
-Last updated: 2026-04-23
+Last updated: 2026-04-30
 
 ## Unprefixed Opcodes
 
@@ -55,7 +55,7 @@ Fx   ✓    ✓    ✓    ✓    ✗    ✓    ·    ·    ·    ·    ✓    �
 | `0xF6` | `OR d8` | |
 | `0xF8` | `LD HL,SP+r8` | |
 | `0xF9` | `LD SP,HL` | |
-| `0xFB` | `EI` | Enable interrupts |
+| `0xFB` | `EI` | Opcode implemented, but interrupt dispatch not yet wired up in `step` — **must finish before moving on** |
 | RST family | `0xC7/CF/D7/DF/E7/EF/F7/FF` | All 8 RST vectors missing |
 
 ---
@@ -90,7 +90,9 @@ Missing entire CB groups: SLA (CB2x), SRA (CB2x), SWAP (CB3x, except 0x38 SRL_B)
 
 ## Known Issues / TODOs
 
-- No interrupt system (IME, IE, IF registers) — `HALT`, `RETI`, `EI` all blocked on this
+- **Interrupt dispatch not implemented** — `EI`/`DI` set IME flag but `step` never checks IE/IF or dispatches to vectors. Must implement before 02-interrupts can pass.
+- `RETI` not implemented
+- `HALT` wakeup on interrupt not implemented
 - No timer (TIMA/TMA/TAC registers)
 - No LCD/PPU — Blargg tests may need vblank timing
 - `inc16` in `util.clj` only works for register pairs, not SP directly (comment in code)
@@ -98,4 +100,5 @@ Missing entire CB groups: SLA (CB2x), SRA (CB2x), SWAP (CB3x, except 0x38 SRL_B)
 
 ## Test Status
 
-Running `01-special.gb` (Blargg cpu_instrs): reaches ~186k steps before hitting unimplemented opcode. No serial output yet — ROM needs more opcodes to complete its initialisation and reach the test output phase.
+- `01-special.gb` — **Passed** ✓
+- `02-interrupts.gb` — blocked on interrupt dispatch (next up)

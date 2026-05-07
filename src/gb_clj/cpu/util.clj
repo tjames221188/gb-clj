@@ -3,6 +3,15 @@
    [clojure.tools.logging :as log]
    [gb-clj.bus :as bus]))
 
+(defn interrupt-pending? [state]
+  (let [IE (bus/read-byte state 0xFFFF)
+        IF (bus/read-byte state 0xFF0F)]
+    (pos? (bit-and IE IF 0x1F))))
+
+(defn ime-and-interrupt-pending? [state]
+  (and (get-in state [:cpu :interrupts-enabled?])
+       (interrupt-pending? state)))
+
 (defn tick [state n]
   (update-in state [:cpu :t-cycles] + n))
 

@@ -604,6 +604,18 @@
   [state _]
   (util/write-r-to-addr16 state :l :h :l))
 
+(defmethod execute 0x76 HALT
+  [state _]
+  (if (and (not (get-in state [:cpu :interrupts-enabled?]))
+           (util/interrupt-pending? state))
+    (-> state
+        (assoc-in [:cpu :halt-bug?] true)
+        (util/tick 4))
+    (-> state
+        (assoc-in [:cpu :halted?] true)
+        (util/inc-pc)
+        (util/tick 4))))
+
 (defmethod execute 0x77 LD_ADDR_HL_A
   [state _]
   (let [addr (util/get16 state :h :l)]
@@ -984,6 +996,11 @@
   [state _]
   (util/maybe-ret state #(util/flag-set? % util/C-mask)))
 
+(defmethod execute 0xD9 RETI
+  [state _]
+  (-> (util/maybe-ret state (constantly true))
+      (assoc-in [:cpu :interrupts-enabled?] true)))
+
 (defmethod execute 0xDA JP_C_NN
   [state _]
   (util/jump-relative-pred-a16 state #(util/flag-set? % util/C-mask)))
@@ -1103,6 +1120,13 @@
         (assoc-in [:cpu :a] val)
         (util/inc-pc 3)
         (util/tick 16))))
+
+(defmethod execute 0xFB EI
+  [state _]
+  (-> state
+      (assoc-in [:cpu :ime-pending?] true)
+      (util/inc-pc)
+      (util/tick 4)))
 
 (defmethod execute 0xFE CP_N
   [state _]

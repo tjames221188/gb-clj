@@ -10,7 +10,7 @@
 
 (defn make-state [& {:keys [pc sp ime halted ie if-reg]
                      :or   {pc 0x0200 sp 0xFFFE ime true halted false ie 0x00 if-reg 0x00}}]
-  (-> {:cpu (assoc (cpu/initial-state)
+  (-> {:cpu (assoc (cpu/initial-cpu-state)
                    :pc pc
                    :sp sp
                    :interrupts-enabled? ime

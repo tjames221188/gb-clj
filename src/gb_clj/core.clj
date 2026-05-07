@@ -9,7 +9,7 @@
 (timbre/set-min-level! :info)
 
 (defn initial-state []
-  {:cpu (cpu/initial-state)
+  {:cpu (cpu/initial-cpu-state)
    :memory (vec (repeat 0x10000 0))
    :serial-out ""})
 

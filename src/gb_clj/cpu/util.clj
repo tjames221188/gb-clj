@@ -3,42 +3,42 @@
    [clojure.tools.logging :as log]
    [gb-clj.bus :as bus]))
 
-(defn interrupt-pending? [state]
-  (let [IE (bus/read-byte state 0xFFFF)
-        IF (bus/read-byte state 0xFF0F)]
+(defn interrupt-pending? [gb-state]
+  (let [IE (bus/read-byte gb-state 0xFFFF)
+        IF (bus/read-byte gb-state 0xFF0F)]
     (pos? (bit-and IE IF 0x1F))))
 
-(defn ime-and-interrupt-pending? [state]
-  (and (get-in state [:cpu :interrupts-enabled?])
-       (interrupt-pending? state)))
+(defn ime-and-interrupt-pending? [gb-state]
+  (and (get-in gb-state [:cpu :interrupts-enabled?])
+       (interrupt-pending? gb-state)))
 
-(defn tick [state n]
-  (update-in state [:cpu :t-cycles] + n))
+(defn tick [gb-state n]
+  (update-in gb-state [:cpu :t-cycles] + n))
 
 (defn inc-pc
-  ([state]
-   (inc-pc state 1))
-  ([state n]
-   (update-in state [:cpu :pc] #(bit-and 0xFFFF (+ % n)))))
+  ([gb-state]
+   (inc-pc gb-state 1))
+  ([gb-state n]
+   (update-in gb-state [:cpu :pc] #(bit-and 0xFFFF (+ % n)))))
 
 (def Z-mask 2r10000000)
 (def N-mask 2r01000000)
 (def H-mask 2r00100000)
 (def C-mask 2r00010000)
 
-(defn flag-set? [state mask]
-  (pos? (bit-and (get-in state [:cpu :f]) mask)))
+(defn flag-set? [gb-state mask]
+  (pos? (bit-and (get-in gb-state [:cpu :f]) mask)))
 
-(defn set-flag [state mask]
-  (update-in state [:cpu :f] bit-or mask))
+(defn set-flag [gb-state mask]
+  (update-in gb-state [:cpu :f] bit-or mask))
 
-(defn unset-flag [state mask]
-  (update-in state [:cpu :f] bit-and-not mask))
+(defn unset-flag [gb-state mask]
+  (update-in gb-state [:cpu :f] bit-and-not mask))
 
-(defn update-flag [state mask ?]
+(defn update-flag [gb-state mask ?]
   (if ?
-    (set-flag state mask)
-    (unset-flag state mask)))
+    (set-flag gb-state mask)
+    (unset-flag gb-state mask)))
 
 (defn combine [high low]
   (bit-or (bit-shift-left high 8) low))
@@ -47,137 +47,137 @@
   [(bit-shift-right (bit-and word 0xFF00) 8) ; High byte
    (bit-and word 0x00FF)])                   ; Low byte
 
-(defn get16 [state r1 r2]
-  (->> (:cpu state)
+(defn get16 [gb-state r1 r2]
+  (->> (:cpu gb-state)
        ((juxt r1 r2))
        (apply combine)))
 
-(defn set16 [state r1 r2 v]
+(defn set16 [gb-state r1 r2 v]
   (let [[high low] (split v)]
-    (-> state
+    (-> gb-state
         (assoc-in [:cpu r1] high)
         (assoc-in [:cpu r2] low))))
 
-(defn dec8 [state prev]
+(defn dec8 [gb-state prev]
   (let [val (bit-and 0xFF (dec prev))
         h? (zero? (bit-and 0xF prev)) ;; will always "borrow" from upper nibble if lower nibble is 0000
         ]
-    [val (-> state
+    [val (-> gb-state
              (set-flag N-mask)
              (update-flag Z-mask (zero? val))
              (update-flag H-mask h?))]))
 
-(defn dec-r8 [state r]
-  (let [prev (get-in state [:cpu r])
-        [val state] (dec8 state prev)]
-    (assoc-in state  [:cpu r] val)))
+(defn dec-r8 [gb-state r]
+  (let [prev (get-in gb-state [:cpu r])
+        [val gb-state] (dec8 gb-state prev)]
+    (assoc-in gb-state  [:cpu r] val)))
 
 (defn dec-r16
-  ([state r]
+  ([gb-state r]
    (when (not= :sp r)
      (log/warn "single register dec16, but not stack pointer! ( " r " )"))
-   (update-in state [:cpu r] (comp #(bit-and 0xFFFF %) dec)))
-  ([state r1 r2]
-   (->> (:cpu state)
+   (update-in gb-state [:cpu r] (comp #(bit-and 0xFFFF %) dec)))
+  ([gb-state r1 r2]
+   (->> (:cpu gb-state)
         ((juxt r1 r2))
         (apply combine)
         (dec)
         (bit-and 0xFFFF)
-        (set16 state r1 r2))))
+        (set16 gb-state r1 r2))))
 
-(defn inc8 [state prev]
+(defn inc8 [gb-state prev]
   (let [val (bit-and 0xFF (inc prev))
         z? (zero? val)
         h? (= 0x0F (bit-and prev 0x0F))]
-    [val (-> state
+    [val (-> gb-state
              (unset-flag N-mask)
              (update-flag Z-mask z?)
              (update-flag H-mask h?))]))
 
-(defn inc-r8 [state r]
-  (let [prev (get-in state [:cpu r])
-        [val state] (inc8 state prev)]
-    (assoc-in state [:cpu r] val)))
+(defn inc-r8 [gb-state r]
+  (let [prev (get-in gb-state [:cpu r])
+        [val gb-state] (inc8 gb-state prev)]
+    (assoc-in gb-state [:cpu r] val)))
 
-(defn inc16 [state r1 r2]
+(defn inc16 [gb-state r1 r2]
   ;; TODO - this currently only works for register pairs. the stack pointer is 
   ;;        a single 16 bit field - add a case for this
-  (let [[r1-v r2-v] (->> (:cpu state)
+  (let [[r1-v r2-v] (->> (:cpu gb-state)
                          ((juxt r1 r2))
                          (apply combine)
                          (inc)
                          (bit-and 0xFFFF)
                          (split))]
-    (-> state
+    (-> gb-state
         (assoc-in [:cpu r1] r1-v)
         (assoc-in [:cpu r2] r2-v))))
 
-(defn add-hl [state val]
-  (let [hl (get16 state :h :l)
+(defn add-hl [gb-state val]
+  (let [hl (get16 gb-state :h :l)
         result (+ hl val)
         new-hl (bit-and 0xFFFF result)
         h? (> (+ (bit-and hl 0xFFF) (bit-and val 0xFFF)) 0xFFF)
         c? (> result 0xFFFF)]
-    (-> state
+    (-> gb-state
         (set16 :h :l new-hl)
         (unset-flag N-mask)
         (update-flag H-mask h?)
         (update-flag C-mask c?))))
 
 (defn load8-immediate
-  [state register-or-addr]
-  (let [pc (get-in state [:cpu :pc])
-        n (bus/read-byte state (inc pc))]
+  [gb-state register-or-addr]
+  (let [pc (get-in gb-state [:cpu :pc])
+        n (bus/read-byte gb-state (inc pc))]
     (if (keyword? register-or-addr)
-      (-> state
+      (-> gb-state
           (assoc-in [:cpu register-or-addr] n)
           (inc-pc 2)
           (tick 8))
-      (-> state
+      (-> gb-state
           (bus/write-byte register-or-addr n)
           (inc-pc 2)
           (tick 12)))))
 
 (defn load16-immediate
-  [state r1 r2]
-  (let [pc (get-in state [:cpu :pc])
-        nn (bus/read-word state (inc pc))]
-    (-> state
+  [gb-state r1 r2]
+  (let [pc (get-in gb-state [:cpu :pc])
+        nn (bus/read-word gb-state (inc pc))]
+    (-> gb-state
         (set16 r1 r2 nn)
         (inc-pc 3))))
 
-(defn pop-val-16 [state]
-  (let [sp (get-in state [:cpu :sp])
-        low (bus/read-byte state sp)
-        high (bus/read-byte state (inc sp))]
+(defn pop-val-16 [gb-state]
+  (let [sp (get-in gb-state [:cpu :sp])
+        low (bus/read-byte gb-state sp)
+        high (bus/read-byte gb-state (inc sp))]
     [[high low]
-     (update-in state [:cpu :sp] #(bit-and 0xFFFF (+ % 2)))]))
+     (update-in gb-state [:cpu :sp] #(bit-and 0xFFFF (+ % 2)))]))
 
-(defn push-val-16 [state val]
-  (let [sp (get-in state [:cpu :sp])
+(defn push-val-16 [gb-state val]
+  (let [sp (get-in gb-state [:cpu :sp])
         h-addr (bit-and 0xFFFF (dec sp))
         l-addr (bit-and 0xFFFF (dec h-addr))
         [h-val l-val] (split val)]
-    (-> state
+    (-> gb-state
         (bus/write-byte h-addr h-val)
         (bus/write-byte l-addr l-val)
         (assoc-in [:cpu :sp] l-addr))))
 
-(defn pop-r-16 [state r1 r2]
-  (let [[[high low] state] (pop-val-16 state)]
-    (-> state
+(defn pop-r-16 [gb-state r1 r2]
+  (let [[[high low] gb-state] (pop-val-16 gb-state)]
+    (-> gb-state
         (assoc-in [:cpu r1] high)
         (assoc-in [:cpu r2] (cond-> low (= :f r2) (bit-and 0xF0))))))
 
-(defn push-r-16 [state r1 r2]
-  (let [val (->> (:cpu state)
+(defn push-r-16 [gb-state r1 r2]
+  (let [val (->> (:cpu gb-state)
                  ((juxt r1 r2))
                  (apply combine))]
-    (push-val-16 state val)))
+    (push-val-16 gb-state val)))
 
-(defn copy-register [state r-src r-dest]
-  (let [v (get-in state [:cpu r-src])]
-    (assoc-in state [:cpu r-dest] v)))
+(defn copy-register [gb-state r-src r-dest]
+  (let [v (get-in gb-state [:cpu r-src])]
+    (assoc-in gb-state [:cpu r-dest] v)))
 
 (defn as-signed-8 [n]
   (if (>= n 128)
@@ -185,24 +185,24 @@
     n))
 
 (defn jump-relative-pred-r8
-  [state pred?]
-  (let [offset (as-signed-8 (bus/read-byte state (inc (get-in state [:cpu :pc]))))]
-    (if (pred? state)
-      (-> state
+  [gb-state pred?]
+  (let [offset (as-signed-8 (bus/read-byte gb-state (inc (get-in gb-state [:cpu :pc]))))]
+    (if (pred? gb-state)
+      (-> gb-state
           (inc-pc (+ 2 offset))
           (tick 12))
-      (-> state
+      (-> gb-state
           (inc-pc 2)
           (tick 8)))))
 
 (defn jump-relative-pred-a16
-  [state pred?]
-  (let [addr (bus/read-word state (inc (get-in state [:cpu :pc])))]
-    (if (pred? state)
-      (-> state
+  [gb-state pred?]
+  (let [addr (bus/read-word gb-state (inc (get-in gb-state [:cpu :pc])))]
+    (if (pred? gb-state)
+      (-> gb-state
           (assoc-in [:cpu :pc] addr)
           (tick 16))
-      (-> state
+      (-> gb-state
           (inc-pc 3)
           (tick 12)))))
 
@@ -211,18 +211,18 @@
   [a b result]
   (bit-test (bit-xor a b result) 4))
 
-(defn write-r-to-addr16 [state r r-addr-1 r-addr-2]
-  (let [addr (get16 state r-addr-1 r-addr-2)
-        val (get-in state [:cpu r])]
-    (-> state
+(defn write-r-to-addr16 [gb-state r r-addr-1 r-addr-2]
+  (let [addr (get16 gb-state r-addr-1 r-addr-2)
+        val (get-in gb-state [:cpu r])]
+    (-> gb-state
         (bus/write-byte addr val)
         (inc-pc)
         (tick 8))))
 
-(defn load-r-from-addr16 [state r r-addr-1 r-addr-2]
-  (let [addr (get16 state r-addr-1 r-addr-2)
-        val (bus/read-byte state addr)]
-    (-> state
+(defn load-r-from-addr16 [gb-state r r-addr-1 r-addr-2]
+  (let [addr (get16 gb-state r-addr-1 r-addr-2)
+        val (bus/read-byte gb-state addr)]
+    (-> gb-state
         (assoc-in [:cpu r] val)
         (inc-pc)
         (tick 8))))
@@ -261,14 +261,14 @@
    (bit-and old-val 0x01)])
 
 (defn add-with-carry
-  [state val]
-  (let [a (get-in state [:cpu :a])
-        old-c (if (flag-set? state C-mask) 1 0)
+  [gb-state val]
+  (let [a (get-in gb-state [:cpu :a])
+        old-c (if (flag-set? gb-state C-mask) 1 0)
         result (+ a val old-c)
         new-a (bit-and 0xFF result)
         h? (> (+ (bit-and  a 0xf) (bit-and val 0xF) old-c) 0xF)
         c? (> result 0xFF)]
-    (-> state
+    (-> gb-state
         (assoc-in [:cpu :a] new-a)
         (update-flag Z-mask (zero? new-a))
         (unset-flag N-mask)
@@ -276,11 +276,11 @@
         (update-flag C-mask c?))))
 
 (defn maybe-ret
-  [state pred]
-  (if (pred state)
-    (let [[[high low] state] (pop-val-16 state)]
-      (-> state
+  [gb-state pred]
+  (if (pred gb-state)
+    (let [[[high low] gb-state] (pop-val-16 gb-state)]
+      (-> gb-state
           (assoc-in [:cpu :pc] (combine high low))
           (tick 20)))
-    (-> (inc-pc state)
+    (-> (inc-pc gb-state)
         (tick 8))))

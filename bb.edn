@@ -14,4 +14,12 @@
             (shell "rm -rf .cpcache .calva .nrepl-port"))
 
   ;; Helper to check if your deps.edn is valid
-  check (shell "clj -Spath -A:test:dev")}}
+  check (shell "clj -Spath -A:test:dev")
+
+  ;; Format all source files
+  fmt   (shell "clj -M:fmt")
+
+  ;; Download all dependencies
+  deps  (do (shell "clj -P -A:test")
+            (shell "clj -P -A:fmt")
+            (shell "clj -P -A:dev"))}}

@@ -70,7 +70,7 @@
 (defn dec-r8 [gb-state r]
   (let [prev (get-in gb-state [:cpu r])
         [val gb-state] (dec8 gb-state prev)]
-    (assoc-in gb-state  [:cpu r] val)))
+    (assoc-in gb-state [:cpu r] val)))
 
 (defn dec-r16
   ([gb-state r]
@@ -266,7 +266,7 @@
         old-c (if (flag-set? gb-state C-mask) 1 0)
         result (+ a val old-c)
         new-a (bit-and 0xFF result)
-        h? (> (+ (bit-and  a 0xf) (bit-and val 0xF) old-c) 0xF)
+        h? (> (+ (bit-and a 0xf) (bit-and val 0xF) old-c) 0xF)
         c? (> result 0xFF)]
     (-> gb-state
         (assoc-in [:cpu :a] new-a)

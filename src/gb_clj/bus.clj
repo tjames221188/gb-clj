@@ -9,7 +9,7 @@
   (nth (:memory gb-state) (bit-and 0xFFFF addr)))
 
 (defn read-word [gb-state addr]
-  (let [low  (read-byte gb-state addr)
+  (let [low (read-byte gb-state addr)
         high (read-byte gb-state (inc addr))]
     (bit-or (bit-shift-left high 8) low)))
 

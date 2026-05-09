@@ -84,9 +84,9 @@
       (try
         (push-trace (format-trace gb-state opcode))
         (let [gb-state (cond-> gb-state
-                      (get-in gb-state [:cpu :ime-pending?])
-                      (-> (assoc-in [:cpu :ime-pending?] false)
-                          (assoc-in [:cpu :interrupts-enabled?] true)))]
+                         (get-in gb-state [:cpu :ime-pending?])
+                         (-> (assoc-in [:cpu :ime-pending?] false)
+                             (assoc-in [:cpu :interrupts-enabled?] true)))]
           (cond (get-in gb-state [:cpu :halt-bug?])
                 (do-halt-bug gb-state opcode)
 

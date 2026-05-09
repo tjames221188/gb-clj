@@ -9,7 +9,7 @@
    [gb-clj.cpu.util :as util]))
 
 (defn make-state [& {:keys [pc sp ime halted ie if-reg]
-                     :or   {pc 0x0200 sp 0xFFFE ime true halted false ie 0x00 if-reg 0x00}}]
+                     :or {pc 0x0200 sp 0xFFFE ime true halted false ie 0x00 if-reg 0x00}}]
   (-> {:cpu (assoc (cpu/initial-cpu-state)
                    :pc pc
                    :sp sp

@@ -316,7 +316,7 @@
         (util/inc-pc 3)
         (util/tick 12))))
 
-(defmethod execute 0x32  LD_HL_DEC_ADDR_A
+(defmethod execute 0x32 LD_HL_DEC_ADDR_A
   [gb-state _]
   (let [addr (util/get16 gb-state :h :l)]
     (-> gb-state
@@ -1111,6 +1111,23 @@
       (util/push-r-16 :a :f)
       (util/inc-pc)
       (util/tick 16)))
+
+(defmethod execute 0xF8 LD_HL_SP_r8
+  [gb-state _]
+  (let [sp (get-in gb-state [:cpu :sp])
+        raw (bus/read-byte gb-state (inc (get-in gb-state [:cpu :pc])))
+        offset (util/as-signed-8 raw)
+        result (bit-and 0xFFFF (+ sp offset))
+        h? (> (+ (bit-and sp 0xF) (bit-and raw 0xF)) 0xF)
+        c? (> (+ (bit-and sp 0xFF) (bit-and raw 0xFF)) 0xFF)]
+    (-> gb-state
+        (util/set16 :h :l result)
+        (util/unset-flag util/Z-mask)
+        (util/unset-flag util/N-mask)
+        (util/update-flag util/H-mask h?)
+        (util/update-flag util/C-mask c?)
+        (util/inc-pc 2)
+        (util/tick 12))))
 
 (defmethod execute 0xFA LD_A_ADDR_A16
   [gb-state _]

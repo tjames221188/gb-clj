@@ -1,6 +1,6 @@
 # Implementation Progress
 
-Last updated: 2026-04-30
+Last updated: 2026-05-11
 
 ## Unprefixed Opcodes
 
@@ -14,7 +14,7 @@ Last updated: 2026-04-30
 3x   ✓    ✓    ✓    ·    ·    ✓    ✓    ·    ·    ✓    ✓    ✓    ✓    ✓    ✓    ·
 4x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 5x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
-6x   ·    ·    ·    ·    ·    ·    ✓    ·    ·    ·    ·    ·    ·    ·    ✓    ✓
+6x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ·    ·    ·    ·    ·    ·    ✓    ✓
 7x   ✓    ✓    ✓    ✓    ✓    ✓    ·    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ·
 8x   ·    ·    ·    ·    ·    ·    ·    ·    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 9x   ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·
@@ -26,7 +26,7 @@ Ex   ✓    ✓    ✓    ✗    ✗    ✓    ✓    ·    ·    ✓    ✓    
 Fx   ✓    ✓    ✓    ✓    ✗    ✓    ·    ·    ·    ·    ✓    ✓    ✗    ✗    ✓    ·
 ```
 
-**Implemented: 143 / 245 valid opcodes (58%)**
+**Implemented: 150 / 245 valid opcodes (61%)**
 
 ### Notable missing unprefixed opcodes
 
@@ -40,7 +40,6 @@ Fx   ✓    ✓    ✓    ✓    ✗    ✓    ·    ·    ·    ·    ✓    �
 | `0x37` | `SCF` | Set carry flag |
 | `0x38` | `JR C,r8` | Missing conditional JR |
 | `0x3F` | `CCF` | Complement carry flag |
-| `0x60–0x65`,`0x67` | `LD H,r` | H-register load family |
 | `0x68–0x6D` | `LD L,r` | L-register load family (partial — 0x6E/0x6F done) |
 | `0x76` | `HALT` | Needs interrupt system |
 | `0x7F` | `LD A,A` | Trivial no-op load |

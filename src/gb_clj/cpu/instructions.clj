@@ -612,6 +612,42 @@
       (util/inc-pc)
       (util/tick 4)))
 
+(defmethod execute 0x68 LD_L_B
+  [gb-state _]
+  (-> (util/copy-register gb-state :b :l)
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x69 LD_L_C
+  [gb-state _]
+  (-> (util/copy-register gb-state :c :l)
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x6A LD_L_D
+  [gb-state _]
+  (-> (util/copy-register gb-state :d :l)
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x6B LD_L_E
+  [gb-state _]
+  (-> (util/copy-register gb-state :e :l)
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x6C LD_L_H
+  [gb-state _]
+  (-> (util/copy-register gb-state :h :l)
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x6D LD_L_L
+  [gb-state _]
+  (-> (util/copy-register gb-state :l :l)
+      (util/inc-pc)
+      (util/tick 4)))
+
 (defmethod execute 0x6E LD_L_ADDR_HL
   [gb-state _]
   (util/load-r-from-addr16 gb-state :l :h :l))

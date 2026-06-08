@@ -339,6 +339,10 @@
   (let [addr (util/get16 gb-state :h :l)]
     (util/load8-immediate gb-state addr)))
 
+(defmethod execute 0x38 JR_C_r8
+  [gb-state _]
+  (util/jump-relative-pred-r8 gb-state #(util/flag-set? % util/C-mask)))
+
 (defmethod execute 0x39 ADD_HL_SP
   [gb-state _]
   (-> (util/add-hl gb-state (get-in gb-state [:cpu :sp]))

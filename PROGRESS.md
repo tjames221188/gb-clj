@@ -1,6 +1,6 @@
 # Implementation Progress
 
-Last updated: 2026-06-07
+Last updated: 2026-06-09
 
 ## Unprefixed Opcodes
 
@@ -11,7 +11,7 @@ Last updated: 2026-06-07
 0x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ·    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 1x   ·    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 2x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ·
-3x   ✓    ✓    ✓    ·    ·    ✓    ✓    ·    ·    ✓    ✓    ✓    ✓    ✓    ✓    ·
+3x   ✓    ✓    ✓    ·    ·    ✓    ✓    ·    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ·
 4x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 5x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 6x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
@@ -26,7 +26,7 @@ Ex   ✓    ✓    ✓    ✗    ✗    ✓    ✓    ·    ·    ✓    ✓    
 Fx   ✓    ✓    ✓    ✓    ✗    ✓    ·    ·    ·    ·    ✓    ✓    ✗    ✗    ✓    ·
 ```
 
-**Implemented: 156 / 245 valid opcodes (64%)**
+**Implemented: 157 / 245 valid opcodes (64%)**
 
 ### Notable missing unprefixed opcodes
 
@@ -38,7 +38,6 @@ Fx   ✓    ✓    ✓    ✓    ✗    ✓    ·    ·    ·    ·    ✓    �
 | `0x33` | `INC SP` | |
 | `0x34` | `INC (HL)` | |
 | `0x37` | `SCF` | Set carry flag |
-| `0x38` | `JR C,r8` | Missing conditional JR |
 | `0x3F` | `CCF` | Complement carry flag |
 | `0x76` | `HALT` | Needs interrupt system |
 | `0x7F` | `LD A,A` | Trivial no-op load |
@@ -48,12 +47,9 @@ Fx   ✓    ✓    ✓    ✓    ✗    ✓    ·    ·    ·    ·    ✓    �
 | `0xB0`,`0xB2–0xB5` | `OR r` | Partial OR family |
 | `0xCC` | `CALL Z,a16` | |
 | `0xD4` | `CALL NC,a16` | |
-| `0xD9` | `RETI` | Return + enable interrupts |
 | `0xDC` | `CALL C,a16` | |
 | `0xF6` | `OR d8` | |
-| `0xF8` | `LD HL,SP+r8` | |
 | `0xF9` | `LD SP,HL` | |
-| `0xFB` | `EI` | Opcode implemented, but interrupt dispatch not yet wired up in `step` — **must finish before moving on** |
 | RST family | `0xC7/CF/D7/DF/E7/EF/F7/FF` | All 8 RST vectors missing |
 
 ---

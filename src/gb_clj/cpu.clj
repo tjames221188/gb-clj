@@ -68,7 +68,7 @@
         (util/interrupt-pending? gb-state)
         (assoc-in gb-state [:cpu :halted?] false)
 
-        :else gb-state))
+        :else (util/tick gb-state 4)))
 
 (defn do-halt-bug [gb-state opcode]
   (let [pc (get-in gb-state [:cpu :pc])]

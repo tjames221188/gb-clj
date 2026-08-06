@@ -95,4 +95,4 @@ Missing entire CB groups: SLA (CB2x), SRA (CB2x), SWAP (CB3x, except 0x38 SRL_B)
 ## Test Status
 
 - `01-special.gb` — **Passed** ✓
-- `02-interrupts.gb` — interrupt dispatch, `RETI`, `HALT` wakeup, and the timer are all now implemented, but the ROM still doesn't reach `Passed` within the step budget (hits a `HALT` loop around PC 0xC36F). Not yet diagnosed — likely needs PPU/vblank next.
+- `02-interrupts.gb` — **Passed** ✓ — was hanging in a `HALT` loop waiting on the timer interrupt; fixed by having `halty-walty`'s idle branch (nothing pending) call `(util/tick gb-state 4)` instead of returning state untouched. Previously, `HALT` froze `:cpu :t-cycles`, which froze `timer/tick`'s elapsed-cycle delta, which froze DIV/TIMA — so the timer interrupt the CPU was halted waiting for could never fire. Pre-existing bug in `cpu.clj`, only surfaced once TIMA existed to be waited on.

@@ -8,6 +8,8 @@
                   :main-opts ["-m" "kaocha.runner"]}
            :run {:main-opts ["-m" "gb-clj.core"]}
            :dev {:extra-paths ["test" "test-resources"]
-                 :extra-deps {nrepl/nrepl {:mvn/version "1.6.0"}}}
+                 :extra-deps {nrepl/nrepl {:mvn/version "1.6.0"}
+                              org.clojure/tools.namespace {:mvn/version "1.5.0"}
+                              cider/cider-nrepl {:mvn/version "0.50.2"}}}
            :fmt {:extra-deps {dev.weavejester/cljfmt {:mvn/version "0.16.4"}}
                  :main-opts ["-m" "cljfmt.main" "fix" "src" "test"]}}}

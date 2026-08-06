@@ -3,7 +3,8 @@
    [clojure.tools.logging :as log]
    [gb-clj.bus :as bus]
    [gb-clj.cpu.instructions :as instructions]
-   [gb-clj.cpu.util :as util]))
+   [gb-clj.cpu.util :as util]
+   [gb-clj.timer :as timer]))
 
 (def trace-buf-size 200)
 (def ^:private trace-buf (atom []))
@@ -76,7 +77,7 @@
         (instructions/execute opcode)
         (assoc-in [:cpu :pc] pc))))
 
-(defn step [gb-state]
+(defn- step-cpu [gb-state]
   (if (get-in gb-state [:cpu :halted?])
     (halty-walty gb-state)
     (let [pc (get-in gb-state [:cpu :pc])
@@ -99,3 +100,8 @@
           (log/error e (format "CPU error at: %s" (format-trace gb-state opcode)))
           (throw e))))))
 
+(defn step [state]
+  (let [cycles-before (get-in state [:cpu :t-cycles])
+        next-state (step-cpu state)
+        cycles-after (get-in next-state [:cpu :t-cycles])]
+    (timer/tick next-state (- cycles-after cycles-before))))

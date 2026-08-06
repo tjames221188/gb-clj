@@ -16,7 +16,8 @@
                    :interrupts-enabled? ime
                    :halted? halted)
        :memory (vec (repeat 0x10000 0))
-       :serial-out ""}
+       :serial-out ""
+       :timer {:div-counter 0 :tima-counter 0}}
       (bus/write-byte 0xFFFF ie)
       (bus/write-byte 0xFF0F if-reg)))
 

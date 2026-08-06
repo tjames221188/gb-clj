@@ -1,12 +1,18 @@
 (ns gb-clj.bus
   (:require
-   [clojure.tools.logging :as log]))
+   [clojure.tools.logging :as log]
+   [gb-clj.timer :as timer]))
 
 ;; TODO:
 ;;  - Echo RAM? 0xE000 - 0xFDFF
 
 (defn read-byte [gb-state addr]
-  (nth (:memory gb-state) (bit-and 0xFFFF addr)))
+  (cond
+    (= timer/DIV_ADDR addr)
+    (timer/div-read gb-state)
+
+    :else
+    (nth (:memory gb-state) (bit-and 0xFFFF addr))))
 
 (defn read-word [gb-state addr]
   (let [low (read-byte gb-state addr)
@@ -36,6 +42,9 @@
       (< addr 0xFF00)
       (do (log/warnf "Illegal write to prohibited area: 0x%04X" addr)
           gb-state)
+
+      (= addr timer/DIV_ADDR)
+      (timer/div-write gb-state)
 
       ;; Serial control hook
       (and (= addr 0xFF02) (= val 0x81))

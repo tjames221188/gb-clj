@@ -1,6 +1,6 @@
 # Implementation Progress
 
-Last updated: 2026-06-09
+Last updated: 2026-08-06
 
 ## Unprefixed Opcodes
 
@@ -82,17 +82,17 @@ Missing entire CB groups: SLA (CB2x), SRA (CB2x), SWAP (CB3x, except 0x38 SRL_B)
 
 ---
 
+## Peripherals
+
+- **Timer implemented** (`timer.clj`) — DIV (0xFF04), TIMA (0xFF05), TMA (0xFF06), TAC (0xFF07). DIV is the upper byte of a free-running 16-bit `:div-counter`, reset on any write. TIMA accumulates T-cycles in `:tima-counter` per TAC's clock-select divisor, overflows reload from TMA and set IF bit 2. Wired into `cpu/step`, which now measures T-cycles elapsed per step and calls `timer/tick` with the delta.
+- No LCD/PPU — Blargg tests may still need vblank timing for later sub-tests
+
 ## Known Issues / TODOs
 
-- **Interrupt dispatch not implemented** — `EI`/`DI` set IME flag but `step` never checks IE/IF or dispatches to vectors. Must implement before 02-interrupts can pass.
-- `RETI` not implemented
-- `HALT` wakeup on interrupt not implemented
-- No timer (TIMA/TMA/TAC registers)
-- No LCD/PPU — Blargg tests may need vblank timing
 - `inc16` in `util.clj` only works for register pairs, not SP directly (comment in code)
 - Echo RAM (0xE000–0xFDFF) write mapping is implemented but read mapping is not
 
 ## Test Status
 
 - `01-special.gb` — **Passed** ✓
-- `02-interrupts.gb` — blocked on interrupt dispatch (next up)
+- `02-interrupts.gb` — interrupt dispatch, `RETI`, `HALT` wakeup, and the timer are all now implemented, but the ROM still doesn't reach `Passed` within the step budget (hits a `HALT` loop around PC 0xC36F). Not yet diagnosed — likely needs PPU/vblank next.

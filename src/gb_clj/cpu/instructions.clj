@@ -1219,6 +1219,13 @@
         (util/inc-pc 2)
         (util/tick 12))))
 
+(defmethod execute 0xF9 LD_SP_HL
+  [gb-state _]
+  (-> gb-state
+      (assoc-in [:cpu :sp] (util/get16 gb-state :h :l))
+      (util/inc-pc)
+      (util/tick 8)))
+
 (defmethod execute 0xFA LD_A_ADDR_A16
   [gb-state _]
   (let [addr (bus/read-word gb-state (inc (get-in gb-state [:cpu :pc])))

@@ -889,9 +889,39 @@
         (util/unset-flag util/H-mask)
         (util/unset-flag util/C-mask))))
 
+(defmethod execute 0xB0 OR_B
+  [gb-state _]
+  (-> (or-val gb-state (get-in gb-state [:cpu :b]))
+      (util/inc-pc)
+      (util/tick 4)))
+
 (defmethod execute 0xB1 OR_C
   [gb-state _]
   (-> (or-val gb-state (get-in gb-state [:cpu :c]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0xB2 OR_D
+  [gb-state _]
+  (-> (or-val gb-state (get-in gb-state [:cpu :d]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0xB3 OR_E
+  [gb-state _]
+  (-> (or-val gb-state (get-in gb-state [:cpu :e]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0xB4 OR_H
+  [gb-state _]
+  (-> (or-val gb-state (get-in gb-state [:cpu :h]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0xB5 OR_L
+  [gb-state _]
+  (-> (or-val gb-state (get-in gb-state [:cpu :l]))
       (util/inc-pc)
       (util/tick 4)))
 

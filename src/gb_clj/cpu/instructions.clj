@@ -2,6 +2,7 @@
   (:require
    [clojure.tools.logging :as log]
    [gb-clj.bus :as bus]
+   [gb-clj.cpu.bits :as bits]
    [gb-clj.cpu.prefix-instructions :as prefix]
    [gb-clj.cpu.util :as util]))
 
@@ -1013,7 +1014,7 @@
   [gb-state _]
   (let [[[high low] gb-state] (util/pop-val-16 gb-state)]
     (-> gb-state
-        (assoc-in [:cpu :pc] (util/combine high low))
+        (assoc-in [:cpu :pc] (bits/combine high low))
         (util/tick 16))))
 
 (defmethod execute 0xCA JP_Z_NN

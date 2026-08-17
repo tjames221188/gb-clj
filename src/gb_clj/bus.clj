@@ -1,6 +1,7 @@
 (ns gb-clj.bus
   (:require
    [clojure.tools.logging :as log]
+   [gb-clj.cpu.bits :as bits]
    [gb-clj.timer :as timer]))
 
 ;; TODO:
@@ -17,7 +18,7 @@
 (defn read-word [gb-state addr]
   (let [low (read-byte gb-state addr)
         high (read-byte gb-state (inc addr))]
-    (bit-or (bit-shift-left high 8) low)))
+    (bits/combine high low)))
 
 (defn write-byte [gb-state addr val]
   (let [addr (bit-and 0xFFFF addr)
@@ -59,9 +60,10 @@
       (assoc-in gb-state [:memory addr] val))))
 
 (defn write-word [gb-state addr val]
-  (-> gb-state
-      (write-byte addr (bit-and val 0xFF))
-      (write-byte (inc addr) (bit-and (bit-shift-right val 8) 0xFF))))
+  (let [[high low] (bits/split val)]
+    (-> gb-state
+        (write-byte addr low)
+        (write-byte (inc addr) high))))
 
 (defn map-rom [gb-state rom-data]
   (let [blank-mem (vec (repeat 0x10000 0))

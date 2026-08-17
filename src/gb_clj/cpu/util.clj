@@ -1,7 +1,8 @@
 (ns gb-clj.cpu.util
   (:require
    [clojure.tools.logging :as log]
-   [gb-clj.bus :as bus]))
+   [gb-clj.bus :as bus]
+   [gb-clj.cpu.bits :as bits]))
 
 (defn interrupt-pending? [gb-state]
   (let [IE (bus/read-byte gb-state 0xFFFF)
@@ -40,20 +41,13 @@
     (set-flag gb-state mask)
     (unset-flag gb-state mask)))
 
-(defn combine [high low]
-  (bit-or (bit-shift-left high 8) low))
-
-(defn split [word]
-  [(bit-shift-right (bit-and word 0xFF00) 8) ; High byte
-   (bit-and word 0x00FF)])                   ; Low byte
-
 (defn get16 [gb-state r1 r2]
   (->> (:cpu gb-state)
        ((juxt r1 r2))
-       (apply combine)))
+       (apply bits/combine)))
 
 (defn set16 [gb-state r1 r2 v]
-  (let [[high low] (split v)]
+  (let [[high low] (bits/split v)]
     (-> gb-state
         (assoc-in [:cpu r1] high)
         (assoc-in [:cpu r2] low))))
@@ -80,7 +74,7 @@
   ([gb-state r1 r2]
    (->> (:cpu gb-state)
         ((juxt r1 r2))
-        (apply combine)
+        (apply bits/combine)
         (dec)
         (bit-and 0xFFFF)
         (set16 gb-state r1 r2))))
@@ -104,10 +98,10 @@
   ;;        a single 16 bit field - add a case for this
   (let [[r1-v r2-v] (->> (:cpu gb-state)
                          ((juxt r1 r2))
-                         (apply combine)
+                         (apply bits/combine)
                          (inc)
                          (bit-and 0xFFFF)
-                         (split))]
+                         (bits/split))]
     (-> gb-state
         (assoc-in [:cpu r1] r1-v)
         (assoc-in [:cpu r2] r2-v))))
@@ -157,7 +151,7 @@
   (let [sp (get-in gb-state [:cpu :sp])
         h-addr (bit-and 0xFFFF (dec sp))
         l-addr (bit-and 0xFFFF (dec h-addr))
-        [h-val l-val] (split val)]
+        [h-val l-val] (bits/split val)]
     (-> gb-state
         (bus/write-byte h-addr h-val)
         (bus/write-byte l-addr l-val)
@@ -172,7 +166,7 @@
 (defn push-r-16 [gb-state r1 r2]
   (let [val (->> (:cpu gb-state)
                  ((juxt r1 r2))
-                 (apply combine))]
+                 (apply bits/combine))]
     (push-val-16 gb-state val)))
 
 (defn copy-register [gb-state r-src r-dest]
@@ -280,7 +274,7 @@
   (if (pred gb-state)
     (let [[[high low] gb-state] (pop-val-16 gb-state)]
       (-> gb-state
-          (assoc-in [:cpu :pc] (combine high low))
+          (assoc-in [:cpu :pc] (bits/combine high low))
           (tick 20)))
     (-> (inc-pc gb-state)
         (tick 8))))

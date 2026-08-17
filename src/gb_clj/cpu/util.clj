@@ -93,18 +93,21 @@
         [val gb-state] (inc8 gb-state prev)]
     (assoc-in gb-state [:cpu r] val)))
 
-(defn inc16 [gb-state r1 r2]
-  ;; TODO - this currently only works for register pairs. the stack pointer is 
-  ;;        a single 16 bit field - add a case for this
-  (let [[r1-v r2-v] (->> (:cpu gb-state)
-                         ((juxt r1 r2))
-                         (apply bits/combine)
-                         (inc)
-                         (bit-and 0xFFFF)
-                         (bits/split))]
-    (-> gb-state
-        (assoc-in [:cpu r1] r1-v)
-        (assoc-in [:cpu r2] r2-v))))
+(defn inc16
+  ([gb-state r]
+   (when (not= :sp r)
+     (log/warn "single register inc16, but not stack pointer! ( " r " )"))
+   (update-in gb-state [:cpu r] (comp #(bit-and 0xFFFF %) inc)))
+  ([gb-state r1 r2]
+   (let [[r1-v r2-v] (->> (:cpu gb-state)
+                          ((juxt r1 r2))
+                          (apply bits/combine)
+                          (inc)
+                          (bit-and 0xFFFF)
+                          (bits/split))]
+     (-> gb-state
+         (assoc-in [:cpu r1] r1-v)
+         (assoc-in [:cpu r2] r2-v)))))
 
 (defn add-hl [gb-state val]
   (let [hl (get16 gb-state :h :l)

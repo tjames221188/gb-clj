@@ -1,6 +1,6 @@
 # Implementation Progress
 
-Last updated: 2026-08-06
+Last updated: 2026-08-17
 
 ## Unprefixed Opcodes
 
@@ -8,10 +8,10 @@ Last updated: 2026-08-06
 
 ```
      0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F
-0x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ·    ✓    ✓    ✓    ✓    ✓    ✓    ✓
+0x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 1x   ·    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 2x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ·
-3x   ✓    ✓    ✓    ·    ·    ✓    ✓    ·    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ·
+3x   ✓    ✓    ✓    ✓    ·    ✓    ✓    ·    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ·
 4x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 5x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 6x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
@@ -23,19 +23,17 @@ Bx   ·    ✓    ·    ·    ·    ·    ✓    ✓    ✓    ✓    ✓    ✓
 Cx   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ·    ✓    ✓    ✓    ✓    ·    ✓    ✓    ·
 Dx   ✓    ✓    ✓    ✗    ·    ✓    ✓    ·    ✓    ·    ✓    ✗    ·    ✗    ·    ·
 Ex   ✓    ✓    ✓    ✗    ✗    ✓    ✓    ·    ·    ✓    ✓    ✗    ✗    ✗    ✓    ·
-Fx   ✓    ✓    ✓    ✓    ✗    ✓    ·    ·    ·    ·    ✓    ✓    ✗    ✗    ✓    ·
+Fx   ✓    ✓    ✓    ✓    ✗    ✓    ·    ·    ·    ·    ✓    ✓    ✗    ✗    ✓    ✓
 ```
 
-**Implemented: 157 / 245 valid opcodes (64%)**
+**Implemented: 160 / 245 valid opcodes (65%)**
 
 ### Notable missing unprefixed opcodes
 
 | Opcode | Mnemonic | Notes |
 |--------|----------|-------|
-| `0x08` | `LD (a16),SP` | Store SP to memory |
 | `0x10` | `STOP` | Low priority |
 | `0x2F` | `CPL` | Complement A — next up after DAA |
-| `0x33` | `INC SP` | |
 | `0x34` | `INC (HL)` | |
 | `0x37` | `SCF` | Set carry flag |
 | `0x3F` | `CCF` | Complement carry flag |
@@ -44,12 +42,11 @@ Fx   ✓    ✓    ✓    ✓    ✗    ✓    ·    ·    ·    ·    ✓    �
 | `0x80–0x87` | `ADD A,r` | Entire ADD family missing |
 | `0x90–0x9F` | `SUB/SBC r` | Entire SUB/SBC families missing |
 | `0xA0–0xA7` | `AND r` | Entire AND family missing |
-| `0xB0`,`0xB2–0xB5` | `OR r` | Partial OR family |
+| `0xB0`,`0xB2–0xB5` | `OR r` | Partial OR family — next up, blocking `03-op sp,hl.gb` |
 | `0xCC` | `CALL Z,a16` | |
 | `0xD4` | `CALL NC,a16` | |
 | `0xDC` | `CALL C,a16` | |
 | `0xF6` | `OR d8` | |
-| `0xF9` | `LD SP,HL` | |
 | RST family | `0xC7/CF/D7/DF/E7/EF/F7/FF` | All 8 RST vectors missing |
 
 ---
@@ -89,10 +86,15 @@ Missing entire CB groups: SLA (CB2x), SRA (CB2x), SWAP (CB3x, except 0x38 SRL_B)
 
 ## Known Issues / TODOs
 
-- `inc16` in `util.clj` only works for register pairs, not SP directly (comment in code)
 - Echo RAM (0xE000–0xFDFF) write mapping is implemented but read mapping is not
+
+## Architecture notes
+
+- `gb-clj.cpu.bits` holds `combine`/`split` (pure 8/16-bit byte helpers) with zero dependencies, so both `bus.clj` and `cpu/util.clj` can use them without a circular require. This pattern (dependency-free namespace for anything both `bus` and `cpu/util` need) is the way to resolve future cycles of the same shape — see how `timer.clj` also avoids requiring `bus.clj` for the same reason.
+- `util/inc16` and `util/dec-r16` both have a single-register arity (`[gb-state r]`) for SP alongside the two-register arity for register pairs like BC/DE/HL — follow that pattern for any future SP-specific 16-bit helper.
 
 ## Test Status
 
 - `01-special.gb` — **Passed** ✓
 - `02-interrupts.gb` — **Passed** ✓ — was hanging in a `HALT` loop waiting on the timer interrupt; fixed by having `halty-walty`'s idle branch (nothing pending) call `(util/tick gb-state 4)` instead of returning state untouched. Previously, `HALT` froze `:cpu :t-cycles`, which froze `timer/tick`'s elapsed-cycle delta, which froze DIV/TIMA — so the timer interrupt the CPU was halted waiting for could never fire. Pre-existing bug in `cpu.clj`, only surfaced once TIMA existed to be waited on.
+- `03-op sp,hl.gb` — **In progress** — blocked on `0xB0 OR B` (the OR-register family is only partially implemented).

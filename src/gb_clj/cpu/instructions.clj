@@ -334,6 +334,13 @@
         (util/inc-pc)
         (util/tick 8))))
 
+(defmethod execute 0x33 INC_SP
+  [gb-state _]
+  (-> gb-state
+      (util/inc16 :sp)
+      (util/inc-pc)
+      (util/tick 8)))
+
 (defmethod execute 0x35 DEC_ADDR_HL
   [gb-state _]
   (let [addr (util/get16 gb-state :h :l)

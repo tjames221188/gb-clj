@@ -24,7 +24,7 @@
 (defn get-test-rom [filename]
   (let [res (io/resource (str "cpu_instrs/individual/" filename))]
     (if res
-      (.getPath res)
+      (io/as-file res)
       (throw (Exception. (str "ROM not found: " filename))))))
 
 (defn run-test-rom [filename expected-serial max-steps]
@@ -56,6 +56,12 @@
           final-state (run-test-rom "02-interrupts.gb" expected 20000000)]
       (cpu/dump-trace)
       (println "\nSerial output:\n" (:serial-out final-state))
+      (is (= expected (:serial-out final-state)))))
+  (testing "03-op sp,hl"
+    (cpu/clear-trace)
+    (let [expected "03-op sp,hl\n\n\nPassed\n"
+          final-state (run-test-rom "03-op sp,hl.gb" expected 20000000)]
+      (cpu/dump-trace)
       (is (= expected (:serial-out final-state))))))
 
 (deftest interrupt-dispatch

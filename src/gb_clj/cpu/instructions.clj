@@ -76,6 +76,14 @@
       (util/inc-pc)
       (util/tick 4)))
 
+(defmethod execute 0x08 LD_ADDR_A16_SP
+  [gb-state _]
+  (let [addr (bus/read-word gb-state (inc (get-in gb-state [:cpu :pc])))]
+    (-> gb-state
+        (bus/write-word addr (get-in gb-state [:cpu :sp]))
+        (util/inc-pc 3)
+        (util/tick 20))))
+
 (defmethod execute 0x09 ADD_HL_BC
   [gb-state _]
   (-> (util/add-hl gb-state (util/get16 gb-state :b :c))

@@ -58,6 +58,11 @@
       :else
       (assoc-in gb-state [:memory addr] val))))
 
+(defn write-word [gb-state addr val]
+  (-> gb-state
+      (write-byte addr (bit-and val 0xFF))
+      (write-byte (inc addr) (bit-and (bit-shift-right val 8) 0xFF))))
+
 (defn map-rom [gb-state rom-data]
   (let [blank-mem (vec (repeat 0x10000 0))
         ;; Overwrite the beginning of blank memory with the ROM bytes

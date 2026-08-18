@@ -1178,6 +1178,23 @@
         (util/inc-pc 2)
         (util/tick 8))))
 
+(defmethod execute 0xE8 ADD_SP_r8
+  [gb-state _]
+  (let [sp (get-in gb-state [:cpu :sp])
+        raw (bus/read-byte gb-state (inc (get-in gb-state [:cpu :pc])))
+        offset (util/as-signed-8 raw)
+        result (bit-and 0xFFFF (+ sp offset))
+        h? (> (+ (bit-and sp 0xF) (bit-and raw 0xF)) 0xF)
+        c? (> (+ (bit-and sp 0xFF) (bit-and raw 0xFF)) 0xFF)]
+    (-> gb-state
+        (assoc-in [:cpu :sp] result)
+        (util/unset-flag util/Z-mask)
+        (util/unset-flag util/N-mask)
+        (util/update-flag util/H-mask h?)
+        (util/update-flag util/C-mask c?)
+        (util/inc-pc 2)
+        (util/tick 16))))
+
 (defmethod execute 0xE9 JP_HL
   [gb-state _]
   (-> gb-state

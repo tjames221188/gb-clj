@@ -1257,6 +1257,13 @@
       (util/inc-pc)
       (util/tick 16)))
 
+(defmethod execute 0xF6 OR_d8
+  [gb-state _]
+  (let [val (bus/read-byte gb-state (inc (get-in gb-state [:cpu :pc])))]
+    (-> (or-val gb-state val)
+        (util/inc-pc 2)
+        (util/tick 8))))
+
 (defmethod execute 0xF8 LD_HL_SP_r8
   [gb-state _]
   (let [sp (get-in gb-state [:cpu :sp])

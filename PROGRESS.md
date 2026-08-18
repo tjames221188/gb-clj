@@ -23,10 +23,10 @@ Bx   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓  
 Cx   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ·    ✓    ✓    ✓    ✓    ·    ✓    ✓    ·
 Dx   ✓    ✓    ✓    ✗    ·    ✓    ✓    ·    ✓    ·    ✓    ✗    ·    ✗    ·    ·
 Ex   ✓    ✓    ✓    ✗    ✗    ✓    ✓    ·    ✓    ✓    ✓    ✗    ✗    ✗    ✓    ·
-Fx   ✓    ✓    ✓    ✓    ✗    ✓    ·    ·    ·    ·    ✓    ✓    ✗    ✗    ✓    ✓
+Fx   ✓    ✓    ✓    ✓    ✗    ✓    ✓    ·    ·    ·    ✓    ✓    ✗    ✗    ✓    ✓
 ```
 
-**Implemented: 166 / 245 valid opcodes (68%)**
+**Implemented: 167 / 245 valid opcodes (68%)**
 
 ### Notable missing unprefixed opcodes
 
@@ -45,7 +45,6 @@ Fx   ✓    ✓    ✓    ✓    ✗    ✓    ·    ·    ·    ·    ✓    �
 | `0xCC` | `CALL Z,a16` | |
 | `0xD4` | `CALL NC,a16` | |
 | `0xDC` | `CALL C,a16` | |
-| `0xF6` | `OR d8` | |
 | RST family | `0xC7/CF/D7/DF/E7/EF/F7/FF` | All 8 RST vectors missing |
 
 ---
@@ -97,4 +96,4 @@ Missing entire CB groups: SLA (CB2x), SRA (CB2x), SWAP (CB3x, except 0x38 SRL_B)
 - `01-special.gb` — **Passed** ✓
 - `02-interrupts.gb` — **Passed** ✓ — was hanging in a `HALT` loop waiting on the timer interrupt; fixed by having `halty-walty`'s idle branch (nothing pending) call `(util/tick gb-state 4)` instead of returning state untouched. Previously, `HALT` froze `:cpu :t-cycles`, which froze `timer/tick`'s elapsed-cycle delta, which froze DIV/TIMA — so the timer interrupt the CPU was halted waiting for could never fire. Pre-existing bug in `cpu.clj`, only surfaced once TIMA existed to be waited on.
 - `03-op sp,hl.gb` — **Passed** ✓
-- `04-op r,imm.gb` — **In progress** — blocked on `0xF6 OR d8`.
+- `04-op r,imm.gb` — **In progress** — blocked on `0xDE SBC A,d8`.

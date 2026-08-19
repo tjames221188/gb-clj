@@ -1115,17 +1115,7 @@
 
 (defmethod execute 0xC4 CALL_NZ_NN
   [gb-state _]
-  (let [pc (get-in gb-state [:cpu :pc])
-        return-addr (bit-and 0xFFFF (+ pc 3))
-        target-addr (bus/read-word gb-state (inc pc))]
-    (if (util/flag-set? gb-state util/Z-mask)
-      (-> gb-state
-          (util/inc-pc 3)
-          (util/tick 12))
-      (-> gb-state
-          (util/push-val-16 return-addr)
-          (assoc-in [:cpu :pc] target-addr)
-          (util/tick 24)))))
+  (util/maybe-call gb-state (complement #(util/flag-set? % util/Z-mask))))
 
 (defmethod execute 0xC5 PUSH_BC
   [gb-state _]
@@ -1172,6 +1162,10 @@
         (util/tick 8)
         (prefix/execute-prefix sub-opcode))))
 
+(defmethod execute 0xCC CALL_Z_NN
+  [gb-state _]
+  (util/maybe-call gb-state #(util/flag-set? % util/Z-mask)))
+
 (defmethod execute 0xCD CALL_NN
   [gb-state _]
   (let [pc (get-in gb-state [:cpu :pc])
@@ -1203,6 +1197,10 @@
 (defmethod execute 0xD2 JP_NC_NN
   [gb-state _]
   (util/jump-relative-pred-a16 gb-state (complement #(util/flag-set? % util/C-mask))))
+
+(defmethod execute 0xD4 CALL_NC_NN
+  [gb-state _]
+  (util/maybe-call gb-state (complement #(util/flag-set? % util/C-mask))))
 
 (defmethod execute 0xD5 PUSH_DE
   [gb-state _]
@@ -1244,6 +1242,10 @@
 (defmethod execute 0xDA JP_C_NN
   [gb-state _]
   (util/jump-relative-pred-a16 gb-state #(util/flag-set? % util/C-mask)))
+
+(defmethod execute 0xDC CALL_C_NN
+  [gb-state _]
+  (util/maybe-call gb-state #(util/flag-set? % util/C-mask)))
 
 (defmethod execute 0xE0 LDH_ADDR_A8_A
   [gb-state _]

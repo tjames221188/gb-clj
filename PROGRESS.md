@@ -20,13 +20,13 @@ Last updated: 2026-08-20
 9x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 Ax   ·    ·    ·    ·    ·    ·    ·    ·    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 Bx   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
-Cx   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ·    ✓    ✓    ✓    ✓    ·    ✓    ✓    ·
-Dx   ✓    ✓    ✓    ✗    ·    ✓    ✓    ·    ✓    ·    ✓    ✗    ·    ✗    ✓    ·
+Cx   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ·    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ·
+Dx   ✓    ✓    ✓    ✗    ✓    ✓    ✓    ·    ✓    ·    ✓    ✗    ✓    ✗    ✓    ·
 Ex   ✓    ✓    ✓    ✗    ✗    ✓    ✓    ·    ✓    ✓    ✓    ✗    ✗    ✗    ✓    ·
 Fx   ✓    ✓    ✓    ✓    ✗    ✓    ✓    ·    ·    ·    ✓    ✓    ✗    ✗    ✓    ✓
 ```
 
-**Implemented: 185 / 245 valid opcodes (76%)**
+**Implemented: 188 / 245 valid opcodes (77%)**
 
 ### Notable missing unprefixed opcodes
 
@@ -40,10 +40,7 @@ Fx   ✓    ✓    ✓    ✓    ✗    ✓    ✓    ·    ·    ·    ✓    �
 | `0x76` | `HALT` | Needs interrupt system |
 | `0x80–0x87` | `ADD A,r` | Entire ADD family missing |
 | `0xA0–0xA7` | `AND r` | Entire AND family missing |
-| `0xCC` | `CALL Z,a16` | |
-| `0xD4` | `CALL NC,a16` | |
-| `0xDC` | `CALL C,a16` | |
-| RST family | `0xC7/CF/D7/DF/E7/EF/F7/FF` | All 8 RST vectors missing |
+| RST family | `0xC7/CF/D7/DF/E7/EF/F7/FF` | All 8 RST vectors missing — next up, blocking `07-jr,jp,call,ret,rst.gb` |
 
 ---
 
@@ -88,6 +85,7 @@ Missing entire CB groups: SLA (CB2x), SRA (CB2x), SRL (CB39–CB3F, remaining af
 
 - `gb-clj.cpu.bits` holds `combine`/`split` (pure 8/16-bit byte helpers) with zero dependencies, so both `bus.clj` and `cpu/util.clj` can use them without a circular require. This pattern (dependency-free namespace for anything both `bus` and `cpu/util` need) is the way to resolve future cycles of the same shape — see how `timer.clj` also avoids requiring `bus.clj` for the same reason.
 - `util/inc16` and `util/dec-r16` both have a single-register arity (`[gb-state r]`) for SP alongside the two-register arity for register pairs like BC/DE/HL — follow that pattern for any future SP-specific 16-bit helper.
+- `util/maybe-call` (predicate-parameterized, mirrors `util/maybe-ret`/`jump-relative-pred-*`) backs all four conditional `CALL` opcodes (`0xC4`/`0xCC`/`0xD4`/`0xDC`) — each defmethod is a one-liner passing a different flag predicate.
 - `util/half-carry?` (bit-4 XOR trick) is only valid for genuine **two-operand** arithmetic (`result = a + b` or `a - b`, no separate carry-in) — used correctly by `sub-val` and the plain `0xC6 ADD_A_N`/`0xD6 SUB_A_N`. **Do not** fold a carry-in into `b` via `(+ val old-c)` and pass that to `half-carry?` — it looks like it should work but silently breaks when `val + old-c` itself ripple-carries across a nibble boundary independent of `a` (concrete counterexample: `a=0, val=0x0F, old-c=1` — folded-carry version gives H=false, correct answer is true). This caused a real bug that broke `04-op r,imm.gb` (ADC/SBC) until caught by a brute-force check over all 256×256×2 input combos. `add-with-carry` and `sub-with-carry` (the WITH-CARRY variants) must use the direct nibble-sum/nibble-borrow comparison instead: `(> (+ (bit-and a 0xF) (bit-and val 0xF) old-c) 0xF)` for add, `(< (bit-and a 0xF) (+ (bit-and val 0xF) old-c))` for subtract. `sub-val` (no carry-in) delegates to `sub-with-carry` with the carry flag forced off — same delegation approach is the natural template for `add-val` when the `0x80–0x87 ADD A,r` family gets built, but remember it inherits the *nibble-comparison* H flag, not `half-carry?`.
 
 ## Test Status
@@ -98,4 +96,4 @@ Missing entire CB groups: SLA (CB2x), SRA (CB2x), SRL (CB39–CB3F, remaining af
 - `04-op r,imm.gb` — **Passed** ✓
 - `05-op rp.gb` — **Passed** ✓
 - `06-ld r,r.gb` — **Passed** ✓
-- `07-jr,jp,call,ret,rst.gb` — **In progress** — blocked on `0xCC CALL Z,a16`.
+- `07-jr,jp,call,ret,rst.gb` — **In progress** — blocked on `0xC7 RST 00H` (whole RST family missing).

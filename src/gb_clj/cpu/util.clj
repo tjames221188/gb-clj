@@ -299,6 +299,20 @@
   (-> (unset-flag gb-state C-mask)
       (sub-with-carry val)))
 
+(defn maybe-call
+  [gb-state pred]
+  (let [pc (get-in gb-state [:cpu :pc])
+        return-addr (bit-and 0xFFFF (+ pc 3))
+        target-addr (bus/read-word gb-state (inc pc))]
+    (if (pred gb-state)
+      (-> gb-state
+          (push-val-16 return-addr)
+          (assoc-in [:cpu :pc] target-addr)
+          (tick 24))
+      (-> gb-state
+          (inc-pc 3)
+          (tick 12)))))
+
 (defn maybe-ret
   [gb-state pred]
   (if (pred gb-state)

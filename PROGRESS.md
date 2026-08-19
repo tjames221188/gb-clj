@@ -97,3 +97,4 @@ Missing entire CB groups: SLA (CB2x), SRA (CB2x), SRL (CB39–CB3F, remaining af
 - `02-interrupts.gb` — **Passed** ✓ — was hanging in a `HALT` loop waiting on the timer interrupt; fixed by having `halty-walty`'s idle branch (nothing pending) call `(util/tick gb-state 4)` instead of returning state untouched. Previously, `HALT` froze `:cpu :t-cycles`, which froze `timer/tick`'s elapsed-cycle delta, which froze DIV/TIMA — so the timer interrupt the CPU was halted waiting for could never fire. Pre-existing bug in `cpu.clj`, only surfaced once TIMA existed to be waited on.
 - `03-op sp,hl.gb` — **Passed** ✓
 - `04-op r,imm.gb` — **Passed** ✓
+- `05-op rp.gb` — **Passed** ✓

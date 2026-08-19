@@ -829,6 +829,106 @@
         (util/unset-flag util/H-mask)
         (util/unset-flag util/C-mask))))
 
+(defmethod execute 0x90 SUB_B
+  [gb-state _]
+  (-> (util/sub-val gb-state (get-in gb-state [:cpu :b]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x91 SUB_C
+  [gb-state _]
+  (-> (util/sub-val gb-state (get-in gb-state [:cpu :c]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x92 SUB_D
+  [gb-state _]
+  (-> (util/sub-val gb-state (get-in gb-state [:cpu :d]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x93 SUB_E
+  [gb-state _]
+  (-> (util/sub-val gb-state (get-in gb-state [:cpu :e]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x94 SUB_H
+  [gb-state _]
+  (-> (util/sub-val gb-state (get-in gb-state [:cpu :h]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x95 SUB_L
+  [gb-state _]
+  (-> (util/sub-val gb-state (get-in gb-state [:cpu :l]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x96 SUB_ADDR_HL
+  [gb-state _]
+  (let [addr (util/get16 gb-state :h :l)
+        val (bus/read-byte gb-state addr)]
+    (-> (util/sub-val gb-state val)
+        (util/inc-pc)
+        (util/tick 8))))
+
+(defmethod execute 0x97 SUB_A
+  [gb-state _]
+  (-> (util/sub-val gb-state (get-in gb-state [:cpu :a]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x98 SBC_A_B
+  [gb-state _]
+  (-> (util/sub-with-carry gb-state (get-in gb-state [:cpu :b]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x99 SBC_A_C
+  [gb-state _]
+  (-> (util/sub-with-carry gb-state (get-in gb-state [:cpu :c]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x9A SBC_A_D
+  [gb-state _]
+  (-> (util/sub-with-carry gb-state (get-in gb-state [:cpu :d]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x9B SBC_A_E
+  [gb-state _]
+  (-> (util/sub-with-carry gb-state (get-in gb-state [:cpu :e]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x9C SBC_A_H
+  [gb-state _]
+  (-> (util/sub-with-carry gb-state (get-in gb-state [:cpu :h]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x9D SBC_A_L
+  [gb-state _]
+  (-> (util/sub-with-carry gb-state (get-in gb-state [:cpu :l]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0x9E SBC_A_ADDR_HL
+  [gb-state _]
+  (let [addr (util/get16 gb-state :h :l)
+        val (bus/read-byte gb-state addr)]
+    (-> (util/sub-with-carry gb-state val)
+        (util/inc-pc)
+        (util/tick 8))))
+
+(defmethod execute 0x9F SBC_A_A
+  [gb-state _]
+  (-> (util/sub-with-carry gb-state (get-in gb-state [:cpu :a]))
+      (util/inc-pc)
+      (util/tick 4)))
+
 (defmethod execute 0xA8 XOR_B
   [gb-state _]
   (-> (xor-val gb-state (get-in gb-state [:cpu :b]))
@@ -1128,6 +1228,13 @@
   [gb-state _]
   (-> (util/maybe-ret gb-state (constantly true))
       (assoc-in [:cpu :interrupts-enabled?] true)))
+
+(defmethod execute 0xDE SBC_A_N
+  [gb-state _]
+  (let [n (bus/read-byte gb-state (inc (get-in gb-state [:cpu :pc])))]
+    (-> (util/sub-with-carry gb-state n)
+        (util/inc-pc 2)
+        (util/tick 8))))
 
 (defmethod execute 0xDA JP_C_NN
   [gb-state _]

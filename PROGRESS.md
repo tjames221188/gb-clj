@@ -17,16 +17,16 @@ Last updated: 2026-08-18
 6x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 7x   ✓    ✓    ✓    ✓    ✓    ✓    ·    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ·
 8x   ·    ·    ·    ·    ·    ·    ·    ·    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
-9x   ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·
+9x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 Ax   ·    ·    ·    ·    ·    ·    ·    ·    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 Bx   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 Cx   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ·    ✓    ✓    ✓    ✓    ·    ✓    ✓    ·
-Dx   ✓    ✓    ✓    ✗    ·    ✓    ✓    ·    ✓    ·    ✓    ✗    ·    ✗    ·    ·
+Dx   ✓    ✓    ✓    ✗    ·    ✓    ✓    ·    ✓    ·    ✓    ✗    ·    ✗    ✓    ·
 Ex   ✓    ✓    ✓    ✗    ✗    ✓    ✓    ·    ✓    ✓    ✓    ✗    ✗    ✗    ✓    ·
 Fx   ✓    ✓    ✓    ✓    ✗    ✓    ✓    ·    ·    ·    ✓    ✓    ✗    ✗    ✓    ✓
 ```
 
-**Implemented: 167 / 245 valid opcodes (68%)**
+**Implemented: 184 / 245 valid opcodes (75%)**
 
 ### Notable missing unprefixed opcodes
 
@@ -40,7 +40,6 @@ Fx   ✓    ✓    ✓    ✓    ✗    ✓    ✓    ·    ·    ·    ✓    �
 | `0x76` | `HALT` | Needs interrupt system |
 | `0x7F` | `LD A,A` | Trivial no-op load |
 | `0x80–0x87` | `ADD A,r` | Entire ADD family missing |
-| `0x90–0x9F` | `SUB/SBC r` | Entire SUB/SBC families missing |
 | `0xA0–0xA7` | `AND r` | Entire AND family missing |
 | `0xCC` | `CALL Z,a16` | |
 | `0xD4` | `CALL NC,a16` | |
@@ -90,10 +89,11 @@ Missing entire CB groups: SLA (CB2x), SRA (CB2x), SWAP (CB3x, except 0x38 SRL_B)
 
 - `gb-clj.cpu.bits` holds `combine`/`split` (pure 8/16-bit byte helpers) with zero dependencies, so both `bus.clj` and `cpu/util.clj` can use them without a circular require. This pattern (dependency-free namespace for anything both `bus` and `cpu/util` need) is the way to resolve future cycles of the same shape — see how `timer.clj` also avoids requiring `bus.clj` for the same reason.
 - `util/inc16` and `util/dec-r16` both have a single-register arity (`[gb-state r]`) for SP alongside the two-register arity for register pairs like BC/DE/HL — follow that pattern for any future SP-specific 16-bit helper.
+- `util/half-carry?` (bit-4 XOR trick) computes the H flag correctly for both addition and subtraction — reused by `add-with-carry`, `sub-with-carry`, and `sub-val`. `sub-val` (no carry-in) delegates to `sub-with-carry` with the carry flag forced off, rather than duplicating the arithmetic — the same delegation approach is the natural template for `add-val` when the `0x80–0x87 ADD A,r` family gets built.
 
 ## Test Status
 
 - `01-special.gb` — **Passed** ✓
 - `02-interrupts.gb` — **Passed** ✓ — was hanging in a `HALT` loop waiting on the timer interrupt; fixed by having `halty-walty`'s idle branch (nothing pending) call `(util/tick gb-state 4)` instead of returning state untouched. Previously, `HALT` froze `:cpu :t-cycles`, which froze `timer/tick`'s elapsed-cycle delta, which froze DIV/TIMA — so the timer interrupt the CPU was halted waiting for could never fire. Pre-existing bug in `cpu.clj`, only surfaced once TIMA existed to be waited on.
 - `03-op sp,hl.gb` — **Passed** ✓
-- `04-op r,imm.gb` — **In progress** — blocked on `0xDE SBC A,d8`.
+- `04-op r,imm.gb` — **In progress** — all unprefixed opcodes it needs are done; now blocked on `CB 0x37 SWAP A` (CB-prefixed).

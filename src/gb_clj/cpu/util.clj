@@ -263,7 +263,7 @@
         old-c (if (flag-set? gb-state C-mask) 1 0)
         result (+ a val old-c)
         new-a (bit-and 0xFF result)
-        h? (> (+ (bit-and a 0xf) (bit-and val 0xF) old-c) 0xF)
+        h? (half-carry? a (+ val old-c) result)
         c? (> result 0xFF)]
     (-> gb-state
         (assoc-in [:cpu :a] new-a)
@@ -271,6 +271,26 @@
         (unset-flag N-mask)
         (update-flag H-mask h?)
         (update-flag C-mask c?))))
+
+(defn sub-with-carry
+  [gb-state val]
+  (let [a (get-in gb-state [:cpu :a])
+        old-c (if (flag-set? gb-state C-mask) 1 0)
+        result (- a val old-c)
+        new-a (bit-and 0xFF result)
+        h? (half-carry? a (+ val old-c) result)
+        c? (< a (+ val old-c))]
+    (-> gb-state
+        (assoc-in [:cpu :a] new-a)
+        (update-flag Z-mask (zero? new-a))
+        (set-flag N-mask)
+        (update-flag H-mask h?)
+        (update-flag C-mask c?))))
+
+(defn sub-val
+  [gb-state val]
+  (-> (unset-flag gb-state C-mask)
+      (sub-with-carry val)))
 
 (defn maybe-ret
   [gb-state pred]

@@ -74,6 +74,12 @@
     (let [expected "05-op rp\n\n\nPassed\n"
           final-state (run-test-rom "05-op rp.gb" expected 20000000)]
       (cpu/dump-trace)
+      (is (= expected (:serial-out final-state)))))
+  (testing "06-ld r,r"
+    (cpu/clear-trace)
+    (let [expected "06-ld r,r\n\n\nPassed\n"
+          final-state (run-test-rom "06-ld r,r.gb" expected 20000000)]
+      (cpu/dump-trace)
       (is (= expected (:serial-out final-state))))))
 
 (deftest interrupt-dispatch

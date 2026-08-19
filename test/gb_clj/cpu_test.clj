@@ -142,3 +142,17 @@
       (testing "When flag is already unset"
         (is (= {:cpu {:f 2r1011}} (util/unset-flag {:cpu {:f 2r1011}} mask)))))))
 
+(deftest swap-nibbles
+  (testing "swaps high and low nibbles"
+    (is (= [0x21 0] (util/swap-nibbles 0x12 nil)))
+    (is (= [0xBA 0] (util/swap-nibbles 0xAB nil))))
+  (testing "zero stays zero"
+    (is (= [0x00 0] (util/swap-nibbles 0x00 nil))))
+  (testing "all bits set stays all bits set"
+    (is (= [0xFF 0] (util/swap-nibbles 0xFF nil))))
+  (testing "single nibble values move to the other half"
+    (is (= [0xF0 0] (util/swap-nibbles 0x0F nil)))
+    (is (= [0x0F 0] (util/swap-nibbles 0xF0 nil))))
+  (testing "carry output is always 0, regardless of carry input"
+    (is (= [0x21 0] (util/swap-nibbles 0x12 1)))))
+

@@ -1,6 +1,6 @@
 # Implementation Progress
 
-Last updated: 2026-08-18
+Last updated: 2026-08-20
 
 ## Unprefixed Opcodes
 
@@ -55,7 +55,7 @@ Fx   ✓    ✓    ✓    ✓    ✗    ✓    ✓    ·    ·    ·    ✓    �
 CB0x ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 CB1x ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 CB2x ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·
-CB3x ·    ·    ·    ·    ·    ·    ·    ·    ✓    ·    ·    ·    ·    ·    ·    ·
+CB3x ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ·    ·    ·    ·    ·    ·    ·
 CB4x ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·
 CB5x ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·
 CB6x ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·
@@ -70,9 +70,9 @@ CBEx ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    · 
 CBFx ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·
 ```
 
-**Implemented: 33 / 256 CB opcodes (13%)**
+**Implemented: 41 / 256 CB opcodes (16%)**
 
-Missing entire CB groups: SLA (CB2x), SRA (CB2x), SWAP (CB3x, except 0x38 SRL_B), SRL (CB3x), BIT (CB4x–CB7x), RES (CB8x–CBBx), SET (CBCx–CBFx)
+Missing entire CB groups: SLA (CB2x), SRA (CB2x), SRL (CB39–CB3F, remaining after CB38 SRL_B), BIT (CB4x–CB7x), RES (CB8x–CBBx), SET (CBCx–CBFx)
 
 ---
 
@@ -89,11 +89,11 @@ Missing entire CB groups: SLA (CB2x), SRA (CB2x), SWAP (CB3x, except 0x38 SRL_B)
 
 - `gb-clj.cpu.bits` holds `combine`/`split` (pure 8/16-bit byte helpers) with zero dependencies, so both `bus.clj` and `cpu/util.clj` can use them without a circular require. This pattern (dependency-free namespace for anything both `bus` and `cpu/util` need) is the way to resolve future cycles of the same shape — see how `timer.clj` also avoids requiring `bus.clj` for the same reason.
 - `util/inc16` and `util/dec-r16` both have a single-register arity (`[gb-state r]`) for SP alongside the two-register arity for register pairs like BC/DE/HL — follow that pattern for any future SP-specific 16-bit helper.
-- `util/half-carry?` (bit-4 XOR trick) computes the H flag correctly for both addition and subtraction — reused by `add-with-carry`, `sub-with-carry`, and `sub-val`. `sub-val` (no carry-in) delegates to `sub-with-carry` with the carry flag forced off, rather than duplicating the arithmetic — the same delegation approach is the natural template for `add-val` when the `0x80–0x87 ADD A,r` family gets built.
+- `util/half-carry?` (bit-4 XOR trick) is only valid for genuine **two-operand** arithmetic (`result = a + b` or `a - b`, no separate carry-in) — used correctly by `sub-val` and the plain `0xC6 ADD_A_N`/`0xD6 SUB_A_N`. **Do not** fold a carry-in into `b` via `(+ val old-c)` and pass that to `half-carry?` — it looks like it should work but silently breaks when `val + old-c` itself ripple-carries across a nibble boundary independent of `a` (concrete counterexample: `a=0, val=0x0F, old-c=1` — folded-carry version gives H=false, correct answer is true). This caused a real bug that broke `04-op r,imm.gb` (ADC/SBC) until caught by a brute-force check over all 256×256×2 input combos. `add-with-carry` and `sub-with-carry` (the WITH-CARRY variants) must use the direct nibble-sum/nibble-borrow comparison instead: `(> (+ (bit-and a 0xF) (bit-and val 0xF) old-c) 0xF)` for add, `(< (bit-and a 0xF) (+ (bit-and val 0xF) old-c))` for subtract. `sub-val` (no carry-in) delegates to `sub-with-carry` with the carry flag forced off — same delegation approach is the natural template for `add-val` when the `0x80–0x87 ADD A,r` family gets built, but remember it inherits the *nibble-comparison* H flag, not `half-carry?`.
 
 ## Test Status
 
 - `01-special.gb` — **Passed** ✓
 - `02-interrupts.gb` — **Passed** ✓ — was hanging in a `HALT` loop waiting on the timer interrupt; fixed by having `halty-walty`'s idle branch (nothing pending) call `(util/tick gb-state 4)` instead of returning state untouched. Previously, `HALT` froze `:cpu :t-cycles`, which froze `timer/tick`'s elapsed-cycle delta, which froze DIV/TIMA — so the timer interrupt the CPU was halted waiting for could never fire. Pre-existing bug in `cpu.clj`, only surfaced once TIMA existed to be waited on.
 - `03-op sp,hl.gb` — **Passed** ✓
-- `04-op r,imm.gb` — **In progress** — all unprefixed opcodes it needs are done; now blocked on `CB 0x37 SWAP A` (CB-prefixed).
+- `04-op r,imm.gb` — **Passed** ✓

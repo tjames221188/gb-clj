@@ -257,13 +257,20 @@
            (bit-shift-left old-c 7))
    (bit-and old-val 0x01)])
 
+(defn swap-nibbles
+  [old-val _]
+  (let [[high low] ((juxt #(bit-and % 0xF0)
+                          #(bit-and % 0x0F)) old-val)]
+    [(bit-or (bit-shift-left low 4) (bit-shift-right high 4))
+     0]))
+
 (defn add-with-carry
   [gb-state val]
   (let [a (get-in gb-state [:cpu :a])
         old-c (if (flag-set? gb-state C-mask) 1 0)
         result (+ a val old-c)
         new-a (bit-and 0xFF result)
-        h? (half-carry? a (+ val old-c) result)
+        h? (> (+ (bit-and a 0xF) (bit-and val 0xF) old-c) 0xF)
         c? (> result 0xFF)]
     (-> gb-state
         (assoc-in [:cpu :a] new-a)
@@ -278,7 +285,7 @@
         old-c (if (flag-set? gb-state C-mask) 1 0)
         result (- a val old-c)
         new-a (bit-and 0xFF result)
-        h? (half-carry? a (+ val old-c) result)
+        h? (< (bit-and a 0xF) (+ (bit-and val 0xF) old-c))
         c? (< a (+ val old-c))]
     (-> gb-state
         (assoc-in [:cpu :a] new-a)

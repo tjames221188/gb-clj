@@ -166,6 +166,41 @@
   [gb-state _]
   (rotate gb-state util/rotate-thru-carry-right :a))
 
+(defmethod execute-prefix 0x30 SWAP_B
+  [gb-state _]
+  (rotate gb-state util/swap-nibbles :b))
+
+(defmethod execute-prefix 0x31 SWAP_C
+  [gb-state _]
+  (rotate gb-state util/swap-nibbles :c))
+
+(defmethod execute-prefix 0x32 SWAP_D
+  [gb-state _]
+  (rotate gb-state util/swap-nibbles :d))
+
+(defmethod execute-prefix 0x33 SWAP_E
+  [gb-state _]
+  (rotate gb-state util/swap-nibbles :e))
+
+(defmethod execute-prefix 0x34 SWAP_H
+  [gb-state _]
+  (rotate gb-state util/swap-nibbles :h))
+
+(defmethod execute-prefix 0x35 SWAP_L
+  [gb-state _]
+  (rotate gb-state util/swap-nibbles :l))
+
+(defmethod execute-prefix 0x36 SWAP_ADDR_HL
+  [gb-state _]
+  (let [address (util/get16 gb-state :h :l)]
+    (-> (rotate gb-state util/swap-nibbles address)
+        ;; extra cycles because of read + write from/to memory
+        (util/tick 8))))
+
+(defmethod execute-prefix 0x37 SWAP_A
+  [gb-state _]
+  (rotate gb-state util/swap-nibbles :a))
+
 (defmethod execute-prefix 0x38 SRL_B ;; Shift Right Logial (not shift register left!)
   [gb-state _]
   (let [old-b (get-in gb-state [:cpu :b])

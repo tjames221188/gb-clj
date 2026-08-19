@@ -762,6 +762,11 @@
   [gb-state _]
   (util/load-r-from-addr16 gb-state :a :h :l))
 
+(defmethod execute 0x7F LD_A_A
+  [gb-state _]
+  (-> (util/inc-pc gb-state)
+      (util/tick 4)))
+
 (defmethod execute 0x88 ADC_A_B
   [gb-state _]
   (let [b (get-in gb-state [:cpu :b])]

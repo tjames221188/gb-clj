@@ -364,6 +364,15 @@
   (let [addr (util/get16 gb-state :h :l)]
     (util/load8-immediate gb-state addr)))
 
+(defmethod execute 0x37 SCF
+  [gb-state _]
+  (-> gb-state
+      (util/set-flag util/C-mask)
+      (util/unset-flag util/N-mask)
+      (util/unset-flag util/H-mask)
+      (util/inc-pc)
+      (util/tick 4)))
+
 (defmethod execute 0x38 JR_C_r8
   [gb-state _]
   (util/jump-relative-pred-r8 gb-state #(util/flag-set? % util/C-mask)))

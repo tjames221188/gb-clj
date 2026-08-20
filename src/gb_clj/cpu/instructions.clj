@@ -794,6 +794,71 @@
   (-> (util/inc-pc gb-state)
       (util/tick 4)))
 
+(defmethod execute 0x80 ADD_A_B
+  [gb-state _]
+  (let [val (get-in gb-state [:cpu :b])]
+    (-> gb-state
+        (util/add-val val)
+        (util/inc-pc)
+        (util/tick 4))))
+
+(defmethod execute 0x81 ADD_A_C
+  [gb-state _]
+  (let [val (get-in gb-state [:cpu :c])]
+    (-> gb-state
+        (util/add-val val)
+        (util/inc-pc)
+        (util/tick 4))))
+
+(defmethod execute 0x82 ADD_A_D
+  [gb-state _]
+  (let [val (get-in gb-state [:cpu :d])]
+    (-> gb-state
+        (util/add-val val)
+        (util/inc-pc)
+        (util/tick 4))))
+
+(defmethod execute 0x83 ADD_A_E
+  [gb-state _]
+  (let [val (get-in gb-state [:cpu :e])]
+    (-> gb-state
+        (util/add-val val)
+        (util/inc-pc)
+        (util/tick 4))))
+
+(defmethod execute 0x84 ADD_A_H
+  [gb-state _]
+  (let [val (get-in gb-state [:cpu :h])]
+    (-> gb-state
+        (util/add-val val)
+        (util/inc-pc)
+        (util/tick 4))))
+
+(defmethod execute 0x85 ADD_A_L
+  [gb-state _]
+  (let [val (get-in gb-state [:cpu :l])]
+    (-> gb-state
+        (util/add-val val)
+        (util/inc-pc)
+        (util/tick 4))))
+
+(defmethod execute 0x86 ADD_A_ADDR_HL
+  [gb-state _]
+  (let [addr (util/get16 gb-state :h :l)
+        val (bus/read-byte gb-state addr)]
+    (-> gb-state
+        (util/add-val val)
+        (util/inc-pc)
+        (util/tick 8))))
+
+(defmethod execute 0x87 ADD_A_A
+  [gb-state _]
+  (let [val (get-in gb-state [:cpu :a])]
+    (-> gb-state
+        (util/add-val val)
+        (util/inc-pc)
+        (util/tick 4))))
+
 (defmethod execute 0x88 ADC_A_B
   [gb-state _]
   (let [b (get-in gb-state [:cpu :b])]

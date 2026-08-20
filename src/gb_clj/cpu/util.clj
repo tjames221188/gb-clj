@@ -282,6 +282,11 @@
         (update-flag H-mask h?)
         (update-flag C-mask c?))))
 
+(defn add-val
+  [gb-state val]
+  (-> (unset-flag gb-state C-mask)
+      (add-with-carry val)))
+
 (defn sub-with-carry
   [gb-state val]
   (let [a (get-in gb-state [:cpu :a])

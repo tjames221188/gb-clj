@@ -97,3 +97,4 @@ Missing entire CB groups: BIT (CB4x–CB7x), RES (CB8x–CBBx), SET (CBCx–CBFx
 - `07-jr,jp,call,ret,rst.gb` — **Passed** ✓
 - `08-misc instrs.gb` — **Passed** ✓
 - `09-op r,r.gb` — **Passed** ✓
+- `10-bit ops.gb` — **In progress** — blocked on `CB 0x40` (whole `BIT b,r` family missing).

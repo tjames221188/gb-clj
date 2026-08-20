@@ -267,6 +267,11 @@
     [(bit-or (bit-shift-left low 4) (bit-shift-right high 4))
      0]))
 
+(defn shift-left-arithmetic
+  [old-val _]
+  [(bit-and 0xFF (bit-shift-left old-val 1))
+   (if (bit-test old-val 7) 1 0)])
+
 (defn add-with-carry
   [gb-state val]
   (let [a (get-in gb-state [:cpu :a])
@@ -369,3 +374,4 @@
         (unset-flag N-mask)
         (unset-flag H-mask)
         (unset-flag C-mask))))
+

@@ -44,7 +44,7 @@ Fx   ✓    ✓    ✓    ✓    ✗    ✓    ✓    ✓    ·    ·    ✓    
      0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F
 CB0x ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 CB1x ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
-CB2x ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·
+CB2x ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ·    ·    ·    ·    ·    ·    ·    ·
 CB3x ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ·    ·    ·    ·    ·    ·    ·
 CB4x ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·
 CB5x ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·
@@ -60,9 +60,9 @@ CBEx ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    · 
 CBFx ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·
 ```
 
-**Implemented: 41 / 256 CB opcodes (16%)**
+**Implemented: 49 / 256 CB opcodes (19%)**
 
-Missing entire CB groups: SLA (CB2x), SRA (CB2x), SRL (CB39–CB3F, remaining after CB38 SRL_B), BIT (CB4x–CB7x), RES (CB8x–CBBx), SET (CBCx–CBFx)
+Missing entire CB groups: SRA (CB28–CB2F), SRL (CB39–CB3F, remaining after CB38 SRL_B), BIT (CB4x–CB7x), RES (CB8x–CBBx), SET (CBCx–CBFx)
 
 ---
 
@@ -96,4 +96,4 @@ Missing entire CB groups: SLA (CB2x), SRA (CB2x), SRL (CB39–CB3F, remaining af
 - `06-ld r,r.gb` — **Passed** ✓
 - `07-jr,jp,call,ret,rst.gb` — **Passed** ✓
 - `08-misc instrs.gb` — **Passed** ✓
-- `09-op r,r.gb` — **In progress** — blocked on `CB 0x20` (whole `SLA r` family missing).
+- `09-op r,r.gb` — **In progress** — blocked on `CB 0x28` (whole `SRA r` family missing).

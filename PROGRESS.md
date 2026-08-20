@@ -11,30 +11,28 @@ Last updated: 2026-08-20
 0x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 1x   ·    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 2x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
-3x   ✓    ✓    ✓    ✓    ·    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
+3x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 4x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 5x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 6x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
-7x   ✓    ✓    ✓    ✓    ✓    ✓    ·    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
+7x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 8x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 9x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 Ax   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 Bx   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 Cx   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
-Dx   ✓    ✓    ✓    ✗    ✓    ✓    ✓    ✓    ✓    ·    ✓    ✗    ✓    ✗    ✓    ·
-Ex   ✓    ✓    ✓    ✗    ✗    ✓    ✓    ✓    ✓    ✓    ✓    ✗    ✗    ✗    ✓    ·
-Fx   ✓    ✓    ✓    ✓    ✗    ✓    ✓    ✓    ·    ·    ✓    ✓    ✗    ✗    ✓    ✓
+Dx   ✓    ✓    ✓    ✗    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✗    ✓    ✗    ✓    ✓
+Ex   ✓    ✓    ✓    ✗    ✗    ✓    ✓    ✓    ✓    ✓    ✓    ✗    ✗    ✗    ✓    ✓
+Fx   ✓    ✓    ✓    ✓    ✗    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✗    ✗    ✓    ✓
 ```
 
-**Implemented: 215 / 245 valid opcodes (88%)**
+**Implemented: 244 / 245 valid opcodes (99.6%)** — only `0x10 STOP` remains.
 
 ### Notable missing unprefixed opcodes
 
 | Opcode | Mnemonic | Notes |
 |--------|----------|-------|
 | `0x10` | `STOP` | Low priority |
-| `0x34` | `INC (HL)` | |
-| `0x76` | `HALT` | Needs interrupt system |
 
 ---
 
@@ -100,4 +98,4 @@ All CB-prefixed opcodes implemented.
 - `08-misc instrs.gb` — **Passed** ✓
 - `09-op r,r.gb` — **Passed** ✓
 - `10-bit ops.gb` — **Passed** ✓
-- `11-op a,(hl).gb` — **In progress** — blocked on `0x34 INC (HL)`.
+- `11-op a,(hl).gb` — **Passed** ✓

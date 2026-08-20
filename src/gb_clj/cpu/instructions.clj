@@ -350,6 +350,15 @@
       (util/inc-pc)
       (util/tick 8)))
 
+(defmethod execute 0x34 INC_ADDR_HL
+  [gb-state _]
+  (let [addr (util/get16 gb-state :h :l)
+        prev (bus/read-byte gb-state addr)
+        [val gb-state] (util/inc8 gb-state prev)]
+    (-> (bus/write-byte gb-state addr val)
+        (util/inc-pc)
+        (util/tick 12))))
+
 (defmethod execute 0x35 DEC_ADDR_HL
   [gb-state _]
   (let [addr (util/get16 gb-state :h :l)

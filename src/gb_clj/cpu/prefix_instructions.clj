@@ -7,6 +7,7 @@
                            (cond
                              (<= 0x40 sub-opcode 0x7F) :bit
                              (<= 0x80 sub-opcode 0xBF) :res
+                             (<= 0xC0 sub-opcode 0xFF) :set
                              :else sub-opcode)))
 
 (defmethod execute-prefix :default
@@ -333,17 +334,25 @@
       (= :hl r) ; 4 additional cycles because of read from memory
       (util/tick 4))))
 
-(defmethod execute-prefix :res
-  [gb-state opcode]
+(defn- bit-update
+  [gb-state opcode bit-fn]
   (let [[bit-idx r] (parse-opcode opcode)
         memory? (= :hl r)
         address (when memory? (util/get16 gb-state :h :l))
         val (if memory?
               (bus/read-byte gb-state address)
               (get-in gb-state [:cpu r]))
-        new-val (bit-clear val bit-idx)]
+        new-val (bit-fn val bit-idx)]
     (if memory?
       (-> gb-state
           (bus/write-byte address new-val)
           (util/tick 8))
       (assoc-in gb-state [:cpu r] new-val))))
+
+(defmethod execute-prefix :res
+  [gb-state opcode]
+  (bit-update gb-state opcode bit-clear))
+
+(defmethod execute-prefix :set
+  [gb-state opcode]
+  (bit-update gb-state opcode bit-set))

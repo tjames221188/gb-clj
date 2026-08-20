@@ -415,6 +415,15 @@
   [gb-state _]
   (util/load8-immediate gb-state :a))
 
+(defmethod execute 0x3F CCF
+  [gb-state _]
+  (-> gb-state
+      (util/toggle-flag util/C-mask)
+      (util/unset-flag util/N-mask)
+      (util/unset-flag util/H-mask)
+      (util/inc-pc)
+      (util/tick 4)))
+
 (defmethod execute 0x40 LD_B_B
   [gb-state _]
   (-> gb-state

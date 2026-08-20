@@ -41,6 +41,9 @@
     (set-flag gb-state mask)
     (unset-flag gb-state mask)))
 
+(defn toggle-flag [gb-state mask]
+  (update-in gb-state [:cpu :f] bit-xor mask))
+
 (defn get16 [gb-state r1 r2]
   (->> (:cpu gb-state)
        ((juxt r1 r2))

@@ -85,6 +85,8 @@ All CB-prefixed opcodes implemented.
 - `util/and-val` mirrors `or-val`/`xor-val` (same shape: `Z` from result, `N` cleared, `C` cleared) with one quirk — `AND` always **sets** `H`, unlike `OR`/`XOR` which clear it. Backs the `0xA0–0xA7 AND r` family and `0xE6 AND_N`.
 - **Bucketed multimethod dispatch** — `execute-prefix`'s dispatch function is a `cond`, not a bare identity: exact opcodes still dispatch on themselves (the existing per-opcode `defmethod`s), but whole ranges (`0x40–0x7F` BIT, `0x80–0xBF` RES, `0xC0–0xFF` SET — 192 opcodes total) bucket to a single keyword each and are handled by one `defmethod` per family, decoding the *actual* opcode (now passed through instead of ignored as `_`) via the shared `parse-opcode` helper into a bit-index (`(bit-and (bit-shift-right opcode 3) 0x07)`) and register (`(bit-and opcode 0x07)`, mapped via a `[:b :c :d :e :h :l :hl :a]` vector). Avoids 192 hand-written one-liners. `derive`/`isa?` hierarchies were considered and rejected — they only encode discrete "is-a" relationships you declare one edge at a time, not numeric ranges, so they'd need the same per-opcode declarations a `cond` avoids in one line.
 - `RES`/`SET` share a `bit-update` helper parameterized by `bit-fn` (`bit-clear`/`bit-set`) — both leave all flags untouched (unlike `BIT`, which sets `Z`/`H`), and both are full read-modify-write for `(HL)` (+8 cycles, 16 total) rather than `BIT`'s read-only `(HL)` (+4 cycles, 12 total).
+- `util/maybe-ret`'s "taken" branch is specifically for *conditional* `RET` (20 cycles) — unconditional returns (`0xC9 RET`, `0xD9 RETI`) must NOT delegate to it, since they tick 16, not 20. Both are hand-written with the same pop-and-jump shape instead.
+- `cpu_test.clj`'s `get-test-rom`/`run-test-rom` take a full resource-relative path now (e.g. `"cpu_instrs/individual/01-special.gb"`), not a bare filename under an assumed `cpu_instrs/individual/` prefix — needed once test ROMs outside `cpu_instrs` (e.g. `instr_timing/instr_timing.gb`) got wired in.
 
 ## Test Status
 
@@ -99,3 +101,4 @@ All CB-prefixed opcodes implemented.
 - `09-op r,r.gb` — **Passed** ✓
 - `10-bit ops.gb` — **Passed** ✓
 - `11-op a,(hl).gb` — **Passed** ✓
+- `instr_timing.gb` — **Passed** ✓ — caught a real cycle-count bug: `0xD9 RETI` delegated to `util/maybe-ret` with `(constantly true)`, inheriting the conditional-RET-taken tick count (20) instead of the unconditional tick count (16) that `RETI` (like plain `0xC9 RET`) actually needs. Fixed by giving `RETI` the same hand-written pop-and-jump shape as `RET`, plus setting IME.

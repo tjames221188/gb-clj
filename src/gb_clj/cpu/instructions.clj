@@ -1372,8 +1372,11 @@
 
 (defmethod execute 0xD9 RETI
   [gb-state _]
-  (-> (util/maybe-ret gb-state (constantly true))
-      (assoc-in [:cpu :interrupts-enabled?] true)))
+  (let [[[high low] gb-state] (util/pop-val-16 gb-state)]
+    (-> gb-state
+        (assoc-in [:cpu :pc] (bits/combine high low))
+        (util/tick 16)
+        (assoc-in [:cpu :interrupts-enabled?] true))))
 
 (defmethod execute 0xDE SBC_A_N
   [gb-state _]

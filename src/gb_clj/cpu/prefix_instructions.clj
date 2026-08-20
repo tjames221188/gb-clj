@@ -6,6 +6,7 @@
 (defmulti execute-prefix (fn [_gb-state sub-opcode]
                            (cond
                              (<= 0x40 sub-opcode 0x7F) :bit
+                             (<= 0x80 sub-opcode 0xBF) :res
                              :else sub-opcode)))
 
 (defmethod execute-prefix :default
@@ -311,12 +312,17 @@
 
 (def registers [:b :c :d :e :h :l :hl :a])
 
+(defn- parse-opcode
+  "returns [bit-idx register]"
+  [opcode]
+  [(-> (bit-shift-right opcode 3)
+       (bit-and 0x07))
+   (->> (bit-and 0x07 opcode)
+        (nth registers))])
+
 (defmethod execute-prefix :bit
   [gb-state opcode]
-  (let [bit-idx (-> (bit-shift-right opcode 3)
-                    (bit-and 0x07))
-        r-idx (-> (bit-and 0x07 opcode))
-        r (nth registers r-idx)
+  (let [[bit-idx r] (parse-opcode opcode)
         val (if (= :hl r)
               (bus/read-byte gb-state (util/get16 gb-state :h :l))
               (get-in gb-state [:cpu r]))]
@@ -326,3 +332,18 @@
                 (util/set-flag util/H-mask))
       (= :hl r) ; 4 additional cycles because of read from memory
       (util/tick 4))))
+
+(defmethod execute-prefix :res
+  [gb-state opcode]
+  (let [[bit-idx r] (parse-opcode opcode)
+        memory? (= :hl r)
+        address (when memory? (util/get16 gb-state :h :l))
+        val (if memory?
+              (bus/read-byte gb-state address)
+              (get-in gb-state [:cpu r]))
+        new-val (bit-clear val bit-idx)]
+    (if memory?
+      (-> gb-state
+          (bus/write-byte address new-val)
+          (util/tick 8))
+      (assoc-in gb-state [:cpu r] new-val))))

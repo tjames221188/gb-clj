@@ -916,16 +916,6 @@
         (util/inc-pc)
         (util/tick 4))))
 
-(defn xor-val [gb-state v]
-  (let [a (get-in gb-state [:cpu :a])
-        val (bit-xor a v)]
-    (-> gb-state
-        (assoc-in [:cpu :a] val)
-        (util/update-flag util/Z-mask (zero? val))
-        (util/unset-flag util/N-mask)
-        (util/unset-flag util/H-mask)
-        (util/unset-flag util/C-mask))))
-
 (defmethod execute 0x90 SUB_B
   [gb-state _]
   (-> (util/sub-val gb-state (get-in gb-state [:cpu :b]))
@@ -1028,37 +1018,37 @@
 
 (defmethod execute 0xA8 XOR_B
   [gb-state _]
-  (-> (xor-val gb-state (get-in gb-state [:cpu :b]))
+  (-> (util/xor-val gb-state (get-in gb-state [:cpu :b]))
       (util/inc-pc)
       (util/tick 4)))
 
 (defmethod execute 0xA9 XOR_C
   [gb-state _]
-  (-> (xor-val gb-state (get-in gb-state [:cpu :c]))
+  (-> (util/xor-val gb-state (get-in gb-state [:cpu :c]))
       (util/inc-pc)
       (util/tick 4)))
 
 (defmethod execute 0xAA XOR_D
   [gb-state _]
-  (-> (xor-val gb-state (get-in gb-state [:cpu :d]))
+  (-> (util/xor-val gb-state (get-in gb-state [:cpu :d]))
       (util/inc-pc)
       (util/tick 4)))
 
 (defmethod execute 0xAB XOR_E
   [gb-state _]
-  (-> (xor-val gb-state (get-in gb-state [:cpu :e]))
+  (-> (util/xor-val gb-state (get-in gb-state [:cpu :e]))
       (util/inc-pc)
       (util/tick 4)))
 
 (defmethod execute 0xAC XOR_H
   [gb-state _]
-  (-> (xor-val gb-state (get-in gb-state [:cpu :h]))
+  (-> (util/xor-val gb-state (get-in gb-state [:cpu :h]))
       (util/inc-pc)
       (util/tick 4)))
 
 (defmethod execute 0xAD XOR_L
   [gb-state _]
-  (-> (xor-val gb-state (get-in gb-state [:cpu :l]))
+  (-> (util/xor-val gb-state (get-in gb-state [:cpu :l]))
       (util/inc-pc)
       (util/tick 4)))
 
@@ -1066,59 +1056,49 @@
   [gb-state _]
   (let [addr (util/get16 gb-state :h :l)
         val (bus/read-byte gb-state addr)]
-    (-> (xor-val gb-state val)
+    (-> (util/xor-val gb-state val)
         (util/inc-pc)
         (util/tick 8))))
 
 (defmethod execute 0xAF XOR_A
   [gb-state _]
-  (-> (xor-val gb-state (get-in gb-state [:cpu :a]))
+  (-> (util/xor-val gb-state (get-in gb-state [:cpu :a]))
       (util/inc-pc)
       (util/tick 4)))
 
-(defn or-val [gb-state v]
-  (let [a (get-in gb-state [:cpu :a])
-        val (bit-or a v)]
-    (-> gb-state
-        (assoc-in [:cpu :a] val)
-        (util/update-flag util/Z-mask (zero? val))
-        (util/unset-flag util/N-mask)
-        (util/unset-flag util/H-mask)
-        (util/unset-flag util/C-mask))))
-
 (defmethod execute 0xB0 OR_B
   [gb-state _]
-  (-> (or-val gb-state (get-in gb-state [:cpu :b]))
+  (-> (util/or-val gb-state (get-in gb-state [:cpu :b]))
       (util/inc-pc)
       (util/tick 4)))
 
 (defmethod execute 0xB1 OR_C
   [gb-state _]
-  (-> (or-val gb-state (get-in gb-state [:cpu :c]))
+  (-> (util/or-val gb-state (get-in gb-state [:cpu :c]))
       (util/inc-pc)
       (util/tick 4)))
 
 (defmethod execute 0xB2 OR_D
   [gb-state _]
-  (-> (or-val gb-state (get-in gb-state [:cpu :d]))
+  (-> (util/or-val gb-state (get-in gb-state [:cpu :d]))
       (util/inc-pc)
       (util/tick 4)))
 
 (defmethod execute 0xB3 OR_E
   [gb-state _]
-  (-> (or-val gb-state (get-in gb-state [:cpu :e]))
+  (-> (util/or-val gb-state (get-in gb-state [:cpu :e]))
       (util/inc-pc)
       (util/tick 4)))
 
 (defmethod execute 0xB4 OR_H
   [gb-state _]
-  (-> (or-val gb-state (get-in gb-state [:cpu :h]))
+  (-> (util/or-val gb-state (get-in gb-state [:cpu :h]))
       (util/inc-pc)
       (util/tick 4)))
 
 (defmethod execute 0xB5 OR_L
   [gb-state _]
-  (-> (or-val gb-state (get-in gb-state [:cpu :l]))
+  (-> (util/or-val gb-state (get-in gb-state [:cpu :l]))
       (util/inc-pc)
       (util/tick 4)))
 
@@ -1126,13 +1106,13 @@
   [gb-state _]
   (let [addr (util/get16 gb-state :h :l)
         val (bus/read-byte gb-state addr)]
-    (-> (or-val gb-state val)
+    (-> (util/or-val gb-state val)
         (util/inc-pc)
         (util/tick 8))))
 
 (defmethod execute 0xB7 OR_A
   [gb-state _]
-  (-> (or-val gb-state (get-in gb-state [:cpu :a]))
+  (-> (util/or-val gb-state (get-in gb-state [:cpu :a]))
       (util/inc-pc)
       (util/tick 4)))
 
@@ -1438,7 +1418,7 @@
 (defmethod execute 0xEE XOR_N
   [gb-state _]
   (let [val (bus/read-byte gb-state (inc (get-in gb-state [:cpu :pc])))]
-    (-> (xor-val gb-state val)
+    (-> (util/xor-val gb-state val)
         (util/inc-pc 2)
         (util/tick 8))))
 
@@ -1490,7 +1470,7 @@
 (defmethod execute 0xF6 OR_d8
   [gb-state _]
   (let [val (bus/read-byte gb-state (inc (get-in gb-state [:cpu :pc])))]
-    (-> (or-val gb-state val)
+    (-> (util/or-val gb-state val)
         (util/inc-pc 2)
         (util/tick 8))))
 

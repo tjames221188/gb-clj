@@ -339,3 +339,23 @@
           (tick 20)))
     (-> (inc-pc gb-state)
         (tick 8))))
+
+(defn or-val [gb-state v]
+  (let [a (get-in gb-state [:cpu :a])
+        val (bit-or a v)]
+    (-> gb-state
+        (assoc-in [:cpu :a] val)
+        (update-flag Z-mask (zero? val))
+        (unset-flag N-mask)
+        (unset-flag H-mask)
+        (unset-flag C-mask))))
+
+(defn xor-val [gb-state v]
+  (let [a (get-in gb-state [:cpu :a])
+        val (bit-xor a v)]
+    (-> gb-state
+        (assoc-in [:cpu :a] val)
+        (update-flag Z-mask (zero? val))
+        (unset-flag N-mask)
+        (unset-flag H-mask)
+        (unset-flag C-mask))))

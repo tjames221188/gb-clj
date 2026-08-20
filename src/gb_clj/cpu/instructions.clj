@@ -305,6 +305,15 @@
   [gb-state _]
   (util/load8-immediate gb-state :l))
 
+(defmethod execute 0x2F CPL
+  [gb-state _]
+  (-> gb-state
+      (update-in [:cpu :a] bit-xor 0xFF)
+      (util/set-flag util/N-mask)
+      (util/set-flag util/H-mask)
+      (util/inc-pc)
+      (util/tick 4)))
+
 (defmethod execute 0x30 JR_NC_N
   [gb-state _]
   (let [pc (get-in gb-state [:cpu :pc])

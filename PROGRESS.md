@@ -10,7 +10,7 @@ Last updated: 2026-08-20
      0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F
 0x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 1x   ·    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
-2x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ·
+2x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 3x   ✓    ✓    ✓    ✓    ·    ✓    ✓    ·    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ·
 4x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 5x   ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
@@ -26,16 +26,15 @@ Ex   ✓    ✓    ✓    ✗    ✗    ✓    ✓    ✓    ✓    ✓    ✓  
 Fx   ✓    ✓    ✓    ✓    ✗    ✓    ✓    ✓    ·    ·    ✓    ✓    ✗    ✗    ✓    ✓
 ```
 
-**Implemented: 196 / 245 valid opcodes (80%)**
+**Implemented: 197 / 245 valid opcodes (80%)**
 
 ### Notable missing unprefixed opcodes
 
 | Opcode | Mnemonic | Notes |
 |--------|----------|-------|
 | `0x10` | `STOP` | Low priority |
-| `0x2F` | `CPL` | Complement A — next up after DAA |
 | `0x34` | `INC (HL)` | |
-| `0x37` | `SCF` | Set carry flag |
+| `0x37` | `SCF` | Set carry flag — next up, blocking `09-op r,r.gb` |
 | `0x3F` | `CCF` | Complement carry flag |
 | `0x76` | `HALT` | Needs interrupt system |
 | `0x80–0x87` | `ADD A,r` | Entire ADD family missing |
@@ -98,4 +97,4 @@ Missing entire CB groups: SLA (CB2x), SRA (CB2x), SRL (CB39–CB3F, remaining af
 - `06-ld r,r.gb` — **Passed** ✓
 - `07-jr,jp,call,ret,rst.gb` — **Passed** ✓
 - `08-misc instrs.gb` — **Passed** ✓
-- `09-op r,r.gb` — **In progress** — blocked on `0x2F CPL`.
+- `09-op r,r.gb` — **In progress** — blocked on `0x37 SCF`.

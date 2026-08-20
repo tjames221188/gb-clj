@@ -299,6 +299,15 @@
   (-> (unset-flag gb-state C-mask)
       (sub-with-carry val)))
 
+(defn rst
+  "(ReSTart)"
+  [gb-state target-addr]
+  (let [return-addr (bit-and 0xFFFF (inc (get-in gb-state [:cpu :pc])))]
+    (-> gb-state
+        (push-val-16 return-addr)
+        (assoc-in [:cpu :pc] target-addr)
+        (tick 16))))
+
 (defn maybe-call
   [gb-state pred]
   (let [pc (get-in gb-state [:cpu :pc])

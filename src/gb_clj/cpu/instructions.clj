@@ -1138,6 +1138,10 @@
         (util/inc-pc 2)
         (util/tick 8))))
 
+(defmethod execute 0xC7 RST_00H
+  [gb-state _]
+  (util/rst gb-state 0x0000))
+
 (defmethod execute 0xC8 RET_Z
   [gb-state _]
   (util/maybe-ret gb-state #(util/flag-set? % util/Z-mask)))
@@ -1183,6 +1187,10 @@
         (util/inc-pc 2)
         (util/tick 8))))
 
+(defmethod execute 0xCF RST_08H
+  [gb-state _]
+  (util/rst gb-state 0x0008))
+
 (defmethod execute 0xD0 RET_NC
   [gb-state _]
   (util/maybe-ret gb-state #(not (util/flag-set? % util/C-mask))))
@@ -1223,6 +1231,10 @@
         (util/inc-pc 2)
         (util/tick 8))))
 
+(defmethod execute 0xD7 RST_10H
+  [gb-state _]
+  (util/rst gb-state 0x0010))
+
 (defmethod execute 0xD8 RET_C
   [gb-state _]
   (util/maybe-ret gb-state #(util/flag-set? % util/C-mask)))
@@ -1246,6 +1258,10 @@
 (defmethod execute 0xDC CALL_C_NN
   [gb-state _]
   (util/maybe-call gb-state #(util/flag-set? % util/C-mask)))
+
+(defmethod execute 0xDF RST_18H
+  [gb-state _]
+  (util/rst gb-state 0x0018))
 
 (defmethod execute 0xE0 LDH_ADDR_A8_A
   [gb-state _]
@@ -1292,6 +1308,10 @@
         (util/inc-pc 2)
         (util/tick 8))))
 
+(defmethod execute 0xE7 RST_20H
+  [gb-state _]
+  (util/rst gb-state 0x0020))
+
 (defmethod execute 0xE8 ADD_SP_r8
   [gb-state _]
   (let [sp (get-in gb-state [:cpu :sp])
@@ -1329,6 +1349,10 @@
     (-> (xor-val gb-state val)
         (util/inc-pc 2)
         (util/tick 8))))
+
+(defmethod execute 0xEF RST_28H
+  [gb-state _]
+  (util/rst gb-state 0x0028))
 
 (defmethod execute 0xF0 LDH_A_ADDR_A8
   [gb-state _]
@@ -1378,6 +1402,10 @@
         (util/inc-pc 2)
         (util/tick 8))))
 
+(defmethod execute 0xF7 RST_30H
+  [gb-state _]
+  (util/rst gb-state 0x0030))
+
 (defmethod execute 0xF8 LD_HL_SP_r8
   [gb-state _]
   (let [sp (get-in gb-state [:cpu :sp])
@@ -1424,6 +1452,10 @@
     (-> (compare-val gb-state val)
         (util/inc-pc 2)
         (util/tick 8))))
+
+(defmethod execute 0xFF RST_38H
+  [gb-state _]
+  (util/rst gb-state 0x0038))
 
 (defmethod execute :default
   [gb-state opcode]

@@ -278,6 +278,11 @@
            (bit-and old-val 0x80)) ;; sign bit is preserved
    (if (bit-test old-val 0) 1 0)])
 
+(defn shift-right-logical
+  [old-val _]
+  [(bit-shift-right old-val 1)
+   (if (bit-test old-val 0) 1 0)])
+
 (defn add-with-carry
   [gb-state val]
   (let [a (get-in gb-state [:cpu :a])

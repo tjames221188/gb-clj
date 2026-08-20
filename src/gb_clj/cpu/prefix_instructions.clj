@@ -271,14 +271,37 @@
   [gb-state _]
   (rotate gb-state util/swap-nibbles :a))
 
-(defmethod execute-prefix 0x38 SRL_B ;; Shift Right Logial (not shift register left!)
+(defmethod execute-prefix 0x38 SRL_B
   [gb-state _]
-  (let [old-b (get-in gb-state [:cpu :b])
-        new-b (bit-shift-right old-b 1)
-        c? (bit-test old-b 0)]
-    (-> gb-state
-        (assoc-in [:cpu :b] new-b)
-        (util/update-flag util/Z-mask (zero? new-b))
-        (util/unset-flag util/N-mask)
-        (util/unset-flag util/H-mask)
-        (util/update-flag util/C-mask c?))))
+  (rotate gb-state util/shift-right-logical :b))
+
+(defmethod execute-prefix 0x39 SRL_C
+  [gb-state _]
+  (rotate gb-state util/shift-right-logical :c))
+
+(defmethod execute-prefix 0x3A SRL_D
+  [gb-state _]
+  (rotate gb-state util/shift-right-logical :d))
+
+(defmethod execute-prefix 0x3B SRL_E
+  [gb-state _]
+  (rotate gb-state util/shift-right-logical :e))
+
+(defmethod execute-prefix 0x3C SRL_H
+  [gb-state _]
+  (rotate gb-state util/shift-right-logical :h))
+
+(defmethod execute-prefix 0x3D SRL_L
+  [gb-state _]
+  (rotate gb-state util/shift-right-logical :l))
+
+(defmethod execute-prefix 0x3E SRL_ADDR_HL
+  [gb-state _]
+  (let [address (util/get16 gb-state :h :l)]
+    (-> (rotate gb-state util/shift-right-logical address)
+        ;; extra cycles because of read + write from/to memory
+        (util/tick 8))))
+
+(defmethod execute-prefix 0x3F SRL_A
+  [gb-state _]
+  (rotate gb-state util/shift-right-logical :a))

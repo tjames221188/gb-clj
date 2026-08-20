@@ -1016,6 +1016,56 @@
       (util/inc-pc)
       (util/tick 4)))
 
+(defmethod execute 0xA0 AND_B
+  [gb-state _]
+  (-> (util/and-val gb-state (get-in gb-state [:cpu :b]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0xA1 AND_C
+  [gb-state _]
+  (-> (util/and-val gb-state (get-in gb-state [:cpu :c]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0xA2 AND_D
+  [gb-state _]
+  (-> (util/and-val gb-state (get-in gb-state [:cpu :d]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0xA3 AND_E
+  [gb-state _]
+  (-> (util/and-val gb-state (get-in gb-state [:cpu :e]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0xA4 AND_H
+  [gb-state _]
+  (-> (util/and-val gb-state (get-in gb-state [:cpu :h]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0xA5 AND_L
+  [gb-state _]
+  (-> (util/and-val gb-state (get-in gb-state [:cpu :l]))
+      (util/inc-pc)
+      (util/tick 4)))
+
+(defmethod execute 0xA6 AND_ADDR_HL
+  [gb-state _]
+  (let [addr (util/get16 gb-state :h :l)
+        val (bus/read-byte gb-state addr)]
+    (-> (util/and-val gb-state val)
+        (util/inc-pc)
+        (util/tick 8))))
+
+(defmethod execute 0xA7 AND_A
+  [gb-state _]
+  (-> (util/and-val gb-state (get-in gb-state [:cpu :a]))
+      (util/inc-pc)
+      (util/tick 4)))
+
 (defmethod execute 0xA8 XOR_B
   [gb-state _]
   (-> (util/xor-val gb-state (get-in gb-state [:cpu :b]))

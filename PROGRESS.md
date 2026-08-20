@@ -100,3 +100,4 @@ All CB-prefixed opcodes implemented.
 - `08-misc instrs.gb` — **Passed** ✓
 - `09-op r,r.gb` — **Passed** ✓
 - `10-bit ops.gb` — **Passed** ✓
+- `11-op a,(hl).gb` — **In progress** — blocked on `0x34 INC (HL)`.

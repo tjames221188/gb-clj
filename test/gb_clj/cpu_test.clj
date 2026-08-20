@@ -104,6 +104,12 @@
     (let [expected "10-bit ops\n\n\nPassed\n"
           final-state (run-test-rom "10-bit ops.gb" expected 20000000)]
       (cpu/dump-trace)
+      (is (= expected (:serial-out final-state)))))
+  (testing "11-op a,(hl)"
+    (cpu/clear-trace)
+    (let [expected "11-op a,(hl)\n\n\nPassed\n"
+          final-state (run-test-rom "11-op a,(hl).gb" expected 20000000)]
+      (cpu/dump-trace)
       (is (= expected (:serial-out final-state))))))
 
 (deftest interrupt-dispatch

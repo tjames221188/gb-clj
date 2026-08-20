@@ -46,10 +46,10 @@ CB0x ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓  
 CB1x ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 CB2x ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 CB3x ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
-CB4x ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·
-CB5x ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·
-CB6x ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·
-CB7x ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·
+CB4x ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
+CB5x ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
+CB6x ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
+CB7x ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓    ✓
 CB8x ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·
 CB9x ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·
 CBAx ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·
@@ -60,9 +60,9 @@ CBEx ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    · 
 CBFx ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·    ·
 ```
 
-**Implemented: 64 / 256 CB opcodes (25%)**
+**Implemented: 128 / 256 CB opcodes (50%)**
 
-Missing entire CB groups: BIT (CB4x–CB7x), RES (CB8x–CBBx), SET (CBCx–CBFx)
+Missing entire CB groups: RES (CB8x–CBBx), SET (CBCx–CBFx)
 
 ---
 
@@ -85,6 +85,7 @@ Missing entire CB groups: BIT (CB4x–CB7x), RES (CB8x–CBBx), SET (CBCx–CBFx
 - `util/rst` backs all 8 RST vectors (`0xC7/CF/D7/DF/E7/EF/F7/FF`) — unconditional push-and-jump to a fixed address, same shape as `maybe-call`'s taken branch but with `PC+1` (not `PC+3`) as the return address since RST has no operand bytes.
 - `util/half-carry?` (bit-4 XOR trick) is only valid for genuine **two-operand** arithmetic (`result = a + b` or `a - b`, no separate carry-in) — used correctly by `sub-val` and the plain `0xC6 ADD_A_N`/`0xD6 SUB_A_N`. **Do not** fold a carry-in into `b` via `(+ val old-c)` and pass that to `half-carry?` — it looks like it should work but silently breaks when `val + old-c` itself ripple-carries across a nibble boundary independent of `a` (concrete counterexample: `a=0, val=0x0F, old-c=1` — folded-carry version gives H=false, correct answer is true). This caused a real bug that broke `04-op r,imm.gb` (ADC/SBC) until caught by a brute-force check over all 256×256×2 input combos. `add-with-carry` and `sub-with-carry` (the WITH-CARRY variants) must use the direct nibble-sum/nibble-borrow comparison instead: `(> (+ (bit-and a 0xF) (bit-and val 0xF) old-c) 0xF)` for add, `(< (bit-and a 0xF) (+ (bit-and val 0xF) old-c))` for subtract. `sub-val` (no carry-in) delegates to `sub-with-carry` with the carry flag forced off — same delegation approach is the natural template for `add-val` when the `0x80–0x87 ADD A,r` family gets built, but remember it inherits the *nibble-comparison* H flag, not `half-carry?`.
 - `util/and-val` mirrors `or-val`/`xor-val` (same shape: `Z` from result, `N` cleared, `C` cleared) with one quirk — `AND` always **sets** `H`, unlike `OR`/`XOR` which clear it. Backs the `0xA0–0xA7 AND r` family and `0xE6 AND_N`.
+- **Bucketed multimethod dispatch** — `execute-prefix`'s dispatch function is a `cond`, not a bare identity: exact opcodes still dispatch on themselves (the existing per-opcode `defmethod`s), but a whole range like `0x40–0x7F` (`BIT b,r`, 64 opcodes) can bucket to a single keyword (`:bit`) and be handled by one `defmethod` that decodes the *actual* opcode (now passed through instead of ignored as `_`) into a bit-index (`(bit-and (bit-shift-right opcode 3) 0x07)`) and register-index (`(bit-and opcode 0x07)`, mapped via a `[:b :c :d :e :h :l :hl :a]` vector). Avoids 64 hand-written one-liners. `derive`/`isa?` hierarchies were considered and rejected — they only encode discrete "is-a" relationships you declare one edge at a time, not numeric ranges, so they'd need the same 64 declarations a `cond` avoids in one line. The same bit-index/register-index decode applies to `RES`/`SET` (`CB 0x80–0xFF`), which use identical encoding.
 
 ## Test Status
 
@@ -97,4 +98,4 @@ Missing entire CB groups: BIT (CB4x–CB7x), RES (CB8x–CBBx), SET (CBCx–CBFx
 - `07-jr,jp,call,ret,rst.gb` — **Passed** ✓
 - `08-misc instrs.gb` — **Passed** ✓
 - `09-op r,r.gb` — **Passed** ✓
-- `10-bit ops.gb` — **In progress** — blocked on `CB 0x40` (whole `BIT b,r` family missing).
+- `10-bit ops.gb` — **In progress** — blocked on `CB 0x80` (whole `RES b,r` family missing).

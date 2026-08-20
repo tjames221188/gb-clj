@@ -3,7 +3,10 @@
    [gb-clj.cpu.util :as util]
    [gb-clj.bus :as bus]))
 
-(defmulti execute-prefix (fn [_gb-state sub-opcode] sub-opcode))
+(defmulti execute-prefix (fn [_gb-state sub-opcode]
+                           (cond
+                             (<= 0x40 sub-opcode 0x7F) :bit
+                             :else sub-opcode)))
 
 (defmethod execute-prefix :default
   [gb-state opcode]
@@ -305,3 +308,21 @@
 (defmethod execute-prefix 0x3F SRL_A
   [gb-state _]
   (rotate gb-state util/shift-right-logical :a))
+
+(def registers [:b :c :d :e :h :l :hl :a])
+
+(defmethod execute-prefix :bit
+  [gb-state opcode]
+  (let [bit-idx (-> (bit-shift-right opcode 3)
+                    (bit-and 0x07))
+        r-idx (-> (bit-and 0x07 opcode))
+        r (nth registers r-idx)
+        val (if (= :hl r)
+              (bus/read-byte gb-state (util/get16 gb-state :h :l))
+              (get-in gb-state [:cpu r]))]
+    (cond-> (-> gb-state
+                (util/update-flag util/Z-mask (not (bit-test val bit-idx)))
+                (util/unset-flag util/N-mask)
+                (util/set-flag util/H-mask))
+      (= :hl r) ; 4 additional cycles because of read from memory
+      (util/tick 4))))

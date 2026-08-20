@@ -272,6 +272,12 @@
   [(bit-and 0xFF (bit-shift-left old-val 1))
    (if (bit-test old-val 7) 1 0)])
 
+(defn shift-right-arithmetic
+  [old-val _]
+  [(bit-or (bit-shift-right old-val 1)
+           (bit-and old-val 0x80)) ;; sign bit is preserved
+   (if (bit-test old-val 0) 1 0)])
+
 (defn add-with-carry
   [gb-state val]
   (let [a (get-in gb-state [:cpu :a])

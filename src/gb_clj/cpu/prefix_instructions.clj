@@ -201,6 +201,41 @@
   [gb-state _]
   (rotate gb-state util/shift-left-arithmetic :a))
 
+(defmethod execute-prefix 0x28 SRA_B
+  [gb-state _]
+  (rotate gb-state util/shift-right-arithmetic :b))
+
+(defmethod execute-prefix 0x29 SRA_C
+  [gb-state _]
+  (rotate gb-state util/shift-right-arithmetic :c))
+
+(defmethod execute-prefix 0x2A SRA_D
+  [gb-state _]
+  (rotate gb-state util/shift-right-arithmetic :d))
+
+(defmethod execute-prefix 0x2B SRA_E
+  [gb-state _]
+  (rotate gb-state util/shift-right-arithmetic :e))
+
+(defmethod execute-prefix 0x2C SRA_H
+  [gb-state _]
+  (rotate gb-state util/shift-right-arithmetic :h))
+
+(defmethod execute-prefix 0x2D SRA_L
+  [gb-state _]
+  (rotate gb-state util/shift-right-arithmetic :l))
+
+(defmethod execute-prefix 0x2E SRA_ADDR_HL
+  [gb-state _]
+  (let [address (util/get16 gb-state :h :l)]
+    (-> (rotate gb-state util/shift-right-arithmetic address)
+        ;; extra cycles because of read + write from/to memory
+        (util/tick 8))))
+
+(defmethod execute-prefix 0x2F SRA_A
+  [gb-state _]
+  (rotate gb-state util/shift-right-arithmetic :a))
+
 (defmethod execute-prefix 0x30 SWAP_B
   [gb-state _]
   (rotate gb-state util/swap-nibbles :b))

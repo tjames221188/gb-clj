@@ -92,6 +92,12 @@
     (let [expected "08-misc instrs\n\n\nPassed\n"
           final-state (run-test-rom "08-misc instrs.gb" expected 20000000)]
       (cpu/dump-trace)
+      (is (= expected (:serial-out final-state)))))
+  (testing "09-op r,r"
+    (cpu/clear-trace)
+    (let [expected "09-op r,r\n\n\nPassed\n"
+          final-state (run-test-rom "09-op r,r.gb" expected 20000000)]
+      (cpu/dump-trace)
       (is (= expected (:serial-out final-state))))))
 
 (deftest interrupt-dispatch

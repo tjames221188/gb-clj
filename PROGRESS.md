@@ -98,3 +98,4 @@ Missing entire CB groups: SLA (CB2x), SRA (CB2x), SRL (CB39–CB3F, remaining af
 - `06-ld r,r.gb` — **Passed** ✓
 - `07-jr,jp,call,ret,rst.gb` — **Passed** ✓
 - `08-misc instrs.gb` — **Passed** ✓
+- `09-op r,r.gb` — **In progress** — blocked on `0x2F CPL`.

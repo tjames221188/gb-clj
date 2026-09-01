@@ -71,6 +71,13 @@ All CB-prefixed opcodes implemented.
 
 ## Known Issues / TODOs
 
+- **Memory access timing is not cycle-accurate** — `cpu/step` executes a whole instruction
+  against a frozen snapshot then flushes its T-cycles to the timer afterwards, so every
+  memory access in an instruction appears to happen at the instruction boundary. Totals are
+  correct (`instr_timing` passes); the *distribution* within each instruction is not. This
+  fails all three `mem_timing` ROMs. **See [PLAN-mem-timing.md](PLAN-mem-timing.md)** for
+  the diagnosis, the derived M-cycle rule, and a step-by-step fix.
+- Halt bug (`0x76` + `do-halt-bug`) is an infinite loop — `halt_bug.gb` will hang. See plan.
 - Echo RAM (0xE000–0xFDFF) write mapping is implemented but read mapping is not
 
 ## Architecture notes
@@ -101,4 +108,7 @@ All CB-prefixed opcodes implemented.
 - `09-op r,r.gb` — **Passed** ✓
 - `10-bit ops.gb` — **Passed** ✓
 - `11-op a,(hl).gb` — **Passed** ✓
+- `mem_timing/01-read_timing.gb` — **Failed** ✗ — `F0:2-3 FA:2-4 CB 46..7E:2-3`
+- `mem_timing/02-write_timing.gb` — **Failed** ✗ — `36:2-3 E0:2-3 EA:2-4`
+- `mem_timing/03-modify_timing.gb` — **Failed** ✗ — `34/35:0/0-2/3`, all CB `(HL)` RMW `0/0-3/4`
 - `instr_timing.gb` — **Passed** ✓ — caught a real cycle-count bug: `0xD9 RETI` delegated to `util/maybe-ret` with `(constantly true)`, inheriting the conditional-RET-taken tick count (20) instead of the unconditional tick count (16) that `RETI` (like plain `0xC9 RET`) actually needs. Fixed by giving `RETI` the same hand-written pop-and-jump shape as `RET`, plus setting IME.

@@ -120,6 +120,26 @@
       (cpu/dump-trace)
       (is (= expected (:serial-out final-state))))))
 
+(deftest blargg-mem-timing-test
+  (testing "01-read_timing"
+    (cpu/clear-trace)
+    (let [expected "01-read_timing\n\n\nPassed\n"
+          final-state (run-test-rom "mem_timing/individual/01-read_timing.gb" expected 20000000)]
+      (cpu/dump-trace)
+      (is (= expected (:serial-out final-state)))))
+  (testing "02-write_timing"
+    (cpu/clear-trace)
+    (let [expected "02-write_timing\n\n\nPassed\n"
+          final-state (run-test-rom "mem_timing/individual/02-write_timing.gb" expected 20000000)]
+      (cpu/dump-trace)
+      (is (= expected (:serial-out final-state)))))
+  (testing "03-modify_timing"
+    (cpu/clear-trace)
+    (let [expected "03-modify_timing\n\n\nPassed\n"
+          final-state (run-test-rom "mem_timing/individual/03-modify_timing.gb" expected 20000000)]
+      (cpu/dump-trace)
+      (is (= expected (:serial-out final-state))))))
+
 (deftest interrupt-dispatch
   (testing "jumps to correct vector and clears IF bit"
     (let [state (make-state :pc 0x0200 :sp 0xFFFE :ime true :ie 0x01 :if-reg 0x01)

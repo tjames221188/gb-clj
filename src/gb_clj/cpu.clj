@@ -2,24 +2,41 @@
   (:require
    [clojure.tools.logging :as log]
    [gb-clj.bus :as bus]
+   [gb-clj.cpu.bits :as bits]
    [gb-clj.cpu.instructions :as instructions]
    [gb-clj.cpu.util :as util]
    [gb-clj.timer :as timer]))
 
 (def trace-buf-size 200)
-(def ^:private trace-buf (atom []))
+(def ^:private trace-buf (atom clojure.lang.PersistentQueue/EMPTY))
 
-(defn clear-trace [] (reset! trace-buf []))
+(defn clear-trace [] (swap! trace-buf empty))
+
+(defn format-trace-line [[opcode {:keys [pc a b c d e f h l sp t-cycles sub-op]}]]
+  (if (= opcode 0xCB)
+    (format "PC: 0x%04X | Op: 0xCB 0x%02X | A: %02X F: %02X | BC: %04X | DE: %04X | HL: %04X | SP: %04X (t-cycles: %d)"
+            pc sub-op a f
+            (bits/combine b c) (bits/combine d e) (bits/combine h l)
+            sp t-cycles)
+    (format "PC: 0x%04X | Op: 0x%02X | A: %02X F: %02X | BC: %04X | DE: %04X | HL: %04X | SP: %04X (t-cycles: %d)"
+            pc opcode a f
+            (bits/combine b c) (bits/combine d e) (bits/combine h l)
+            sp t-cycles)))
+
+(defn collect-trace-info [gb-state opcode]
+  (cond-> [opcode (:cpu gb-state)]
+    (= opcode 0xCB)
+    (assoc-in [1 :sub-op] (bus/read-byte gb-state (inc (get-in gb-state [:cpu :pc]))))))
 
 (defn dump-trace []
   (doseq [line @trace-buf]
-    (log/info line)))
+    (log/info (format-trace-line line))))
 
 (defn- push-trace [line]
   (swap! trace-buf (fn [v]
                      (let [v (conj v line)]
                        (if (> (count v) trace-buf-size)
-                         (subvec v (- (count v) trace-buf-size))
+                         (pop v)
                          v)))))
 
 (defn initial-cpu-state []
@@ -33,18 +50,6 @@
    :halted? false
    :t-cycles 0
    :interrupts-enabled? true})
-
-(defn format-trace [gb-state opcode]
-  (let [{:keys [pc a f sp t-cycles]} (:cpu gb-state)]
-    (if (= opcode 0xCB)
-      (let [sub-op (bus/read-byte gb-state (inc pc))]
-        (format "PC: 0x%04X | Op: 0xCB 0x%02X | A: %02X F: %02X | BC: %04X | DE: %04X | HL: %04X | SP: %04X (t-cycles: %d)" pc sub-op a f
-                (util/get16 gb-state :b :c) (util/get16 gb-state :d :e) (util/get16 gb-state :h :l)
-                sp t-cycles))
-      (format "PC: 0x%04X | Op: 0x%02X | A: %02X F: %02X | BC: %04X | DE: %04X | HL: %04X | SP: %04X (t-cycles: %d)"
-              pc opcode a f
-              (util/get16 gb-state :b :c) (util/get16 gb-state :d :e) (util/get16 gb-state :h :l)
-              sp t-cycles))))
 
 (defn- dispatch-interrupt [gb-state]
   (let [IE (bus/read-byte gb-state 0xFFFF)
@@ -83,7 +88,7 @@
     (let [pc (get-in gb-state [:cpu :pc])
           opcode (bus/read-byte gb-state pc)]
       (try
-        (push-trace (format-trace gb-state opcode))
+        (push-trace (collect-trace-info gb-state opcode))
         (let [gb-state (cond-> gb-state
                          (get-in gb-state [:cpu :ime-pending?])
                          (-> (assoc-in [:cpu :ime-pending?] false)
@@ -97,7 +102,8 @@
                 :else (instructions/execute gb-state opcode)))
         (catch Exception e
           (dump-trace)
-          (log/error e (format "CPU error at: %s" (format-trace gb-state opcode)))
+          (log/error e (format "CPU error at: %s" (-> (collect-trace-info gb-state opcode)
+                                                      (format-trace-line))))
           (throw e))))))
 
 (defn step [state]

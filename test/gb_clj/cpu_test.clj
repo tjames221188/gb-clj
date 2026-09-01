@@ -1,6 +1,7 @@
 (ns gb-clj.cpu-test
   (:require
    [clojure.java.io :as io]
+   [clojure.string]
    [clojure.test :refer :all]
    [clojure.tools.logging :as log]
    [gb-clj.bus :as bus]
@@ -33,9 +34,14 @@
                        (core/load-rom rom-path))]
     (loop [state init-state
            steps 0]
-      (if (or (>= steps max-steps)
-              (= (:serial-out state) expected-serial))
+      (cond
+        (or (>= steps max-steps)
+            (= (:serial-out state) expected-serial))
         state
+        (clojure.string/ends-with? (:serial-out state) "Failed")
+        (do (println "Test ROM failed! Serial-out:\n" (:serial-out state))
+            state)
+        :else
         (let [next-state (try
                            (cpu/step state)
                            (catch Exception e
@@ -45,99 +51,68 @@
 
 (deftest blargg-instr-test
   (testing "01-special"
-    (cpu/clear-trace)
     (let [expected "01-special\n\n\nPassed\n"
           final-state (run-test-rom "cpu_instrs/individual/01-special.gb" expected 2000000)]
-      (cpu/dump-trace)
       (is (= expected (:serial-out final-state)))))
   (testing "02-interrupts"
-    (cpu/clear-trace)
     (let [expected "02-interrupts\n\n\nPassed\n"
           final-state (run-test-rom "cpu_instrs/individual/02-interrupts.gb" expected 20000000)]
-      (cpu/dump-trace)
-      (println "\nSerial output:\n" (:serial-out final-state))
       (is (= expected (:serial-out final-state)))))
   (testing "03-op sp,hl"
-    (cpu/clear-trace)
     (let [expected "03-op sp,hl\n\n\nPassed\n"
           final-state (run-test-rom "cpu_instrs/individual/03-op sp,hl.gb" expected 20000000)]
-      (cpu/dump-trace)
       (is (= expected (:serial-out final-state)))))
   (testing "04-op r,imm"
-    (cpu/clear-trace)
     (let [expected "04-op r,imm\n\n\nPassed\n"
           final-state (run-test-rom "cpu_instrs/individual/04-op r,imm.gb" expected 20000000)]
-      (cpu/dump-trace)
       (is (= expected (:serial-out final-state)))))
   (testing "05-op rp"
-    (cpu/clear-trace)
     (let [expected "05-op rp\n\n\nPassed\n"
           final-state (run-test-rom "cpu_instrs/individual/05-op rp.gb" expected 20000000)]
-      (cpu/dump-trace)
       (is (= expected (:serial-out final-state)))))
   (testing "06-ld r,r"
-    (cpu/clear-trace)
     (let [expected "06-ld r,r\n\n\nPassed\n"
           final-state (run-test-rom "cpu_instrs/individual/06-ld r,r.gb" expected 20000000)]
-      (cpu/dump-trace)
       (is (= expected (:serial-out final-state)))))
   (testing "07-jr,jp,call,ret,rst"
-    (cpu/clear-trace)
     (let [expected "07-jr,jp,call,ret,rst\n\n\nPassed\n"
           final-state (run-test-rom "cpu_instrs/individual/07-jr,jp,call,ret,rst.gb" expected 20000000)]
-      (cpu/dump-trace)
       (is (= expected (:serial-out final-state)))))
   (testing "08-misc instrs"
-    (cpu/clear-trace)
     (let [expected "08-misc instrs\n\n\nPassed\n"
           final-state (run-test-rom "cpu_instrs/individual/08-misc instrs.gb" expected 20000000)]
-      (cpu/dump-trace)
       (is (= expected (:serial-out final-state)))))
   (testing "09-op r,r"
-    (cpu/clear-trace)
     (let [expected "09-op r,r\n\n\nPassed\n"
           final-state (run-test-rom "cpu_instrs/individual/09-op r,r.gb" expected 20000000)]
-      (cpu/dump-trace)
       (is (= expected (:serial-out final-state)))))
   (testing "10-bit ops"
-    (cpu/clear-trace)
     (let [expected "10-bit ops\n\n\nPassed\n"
           final-state (run-test-rom "cpu_instrs/individual/10-bit ops.gb" expected 20000000)]
-      (cpu/dump-trace)
       (is (= expected (:serial-out final-state)))))
   (testing "11-op a,(hl)"
-    (cpu/clear-trace)
     (let [expected "11-op a,(hl)\n\n\nPassed\n"
           final-state (run-test-rom "cpu_instrs/individual/11-op a,(hl).gb" expected 20000000)]
-      (cpu/dump-trace)
       (is (= expected (:serial-out final-state))))))
 
 (deftest blargg-instr-timing-test
   (testing "instr_timing"
-    (cpu/clear-trace)
     (let [expected "instr_timing\n\n\nPassed\n"
           final-state (run-test-rom "instr_timing/instr_timing.gb" expected 20000000)]
-      (cpu/dump-trace)
       (is (= expected (:serial-out final-state))))))
 
 (deftest blargg-mem-timing-test
   (testing "01-read_timing"
-    (cpu/clear-trace)
     (let [expected "01-read_timing\n\n\nPassed\n"
           final-state (run-test-rom "mem_timing/individual/01-read_timing.gb" expected 20000000)]
-      (cpu/dump-trace)
       (is (= expected (:serial-out final-state)))))
   (testing "02-write_timing"
-    (cpu/clear-trace)
     (let [expected "02-write_timing\n\n\nPassed\n"
           final-state (run-test-rom "mem_timing/individual/02-write_timing.gb" expected 20000000)]
-      (cpu/dump-trace)
       (is (= expected (:serial-out final-state)))))
   (testing "03-modify_timing"
-    (cpu/clear-trace)
     (let [expected "03-modify_timing\n\n\nPassed\n"
           final-state (run-test-rom "mem_timing/individual/03-modify_timing.gb" expected 20000000)]
-      (cpu/dump-trace)
       (is (= expected (:serial-out final-state))))))
 
 (deftest interrupt-dispatch
